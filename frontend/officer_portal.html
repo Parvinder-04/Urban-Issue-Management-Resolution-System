@@ -1,0 +1,1458 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="UIMRS municipal officer operations portal — live department queue, complaint details and resolution workflow.">
+<title>UIMRS Officer Operations Portal</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<style>
+:root{
+  --navy:#081b2e;
+  --navy-2:#0d2942;
+  --ink:#13283d;
+  --muted:#5b7186;
+  --teal:#0f766e;
+  --teal-strong:#0d9488;
+  --teal-soft:#ccfbf1;
+  --sand:#f2f6f9;
+  --card:#ffffff;
+  --line:#dbe5ee;
+  --line-strong:#c6d4e2;
+  --amber:#b45309;
+  --amber-soft:#fef3c7;
+  --red:#b91c1c;
+  --red-soft:#fee2e2;
+  --green:#166534;
+  --green-soft:#dcfce7;
+  --blue:#1d4ed8;
+  --blue-soft:#dbeafe;
+  --violet:#6d28d9;
+  --violet-soft:#ede9fe;
+  --shadow:0 20px 45px rgba(8,27,46,.10);
+  --shadow-soft:0 8px 20px rgba(8,27,46,.07);
+  --radius:18px;
+  --radius-sm:12px;
+}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{
+  margin:0;font-family:"Segoe UI",system-ui,-apple-system,BlinkMacSystemFont,Arial,sans-serif;
+  background:var(--sand);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased
+}
+h1,h2,h3,h4{margin:0;line-height:1.2;letter-spacing:-.015em}
+p{margin:0}
+a{color:var(--teal)}
+button{font:inherit}
+img{max-width:100%;display:block}
+.hidden{display:none!important}
+.muted{color:var(--muted)}
+.small{font-size:12px}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+/* Buttons */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  border:1px solid var(--line-strong);background:#fff;color:var(--ink);
+  padding:11px 17px;border-radius:999px;font-weight:700;font-size:14px;
+  cursor:pointer;transition:transform .12s ease,box-shadow .12s ease,background .12s ease;
+  text-decoration:none
+}
+.btn:hover{box-shadow:var(--shadow-soft);transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn:focus-visible{outline:3px solid rgba(13,148,136,.35);outline-offset:2px}
+.btn.primary{background:linear-gradient(135deg,var(--teal),var(--teal-strong));border-color:transparent;color:#fff}
+.btn.dark{background:var(--navy);border-color:transparent;color:#fff}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--teal)}
+.btn.danger{background:var(--red-soft);border-color:#fecaca;color:var(--red)}
+.btn.small{padding:8px 13px;font-size:12.5px}
+.btn:disabled{opacity:.55;cursor:not-allowed;transform:none;box-shadow:none}
+.icon-btn{
+  border:1px solid var(--line);background:#fff;border-radius:12px;width:42px;height:42px;
+  display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;color:var(--ink)
+}
+.icon-btn:focus-visible{outline:3px solid rgba(13,148,136,.35);outline-offset:2px}
+
+/* Auth */
+.auth-shell{
+  min-height:100vh;display:grid;grid-template-columns:1.05fr .95fr;
+  background:radial-gradient(1100px 620px at 0% 0%,#123a5a 0%,var(--navy) 52%,#061522 100%)
+}
+.auth-hero{
+  color:#e6f1f7;padding:clamp(32px,6vw,76px);display:flex;flex-direction:column;
+  justify-content:space-between;gap:40px;position:relative;overflow:hidden
+}
+.auth-hero::after{
+  content:"";position:absolute;right:-150px;bottom:-190px;width:470px;height:470px;border-radius:50%;
+  border:1px solid rgba(45,212,191,.25);
+  box-shadow:0 0 0 60px rgba(45,212,191,.05),0 0 0 120px rgba(45,212,191,.03)
+}
+.brand-mark{display:flex;align-items:center;gap:12px;font-weight:800;font-size:18px;letter-spacing:.02em}
+.brand-logo{
+  width:42px;height:42px;border-radius:13px;display:grid;place-items:center;
+  background:linear-gradient(135deg,#14b8a6,#0ea5e9);color:#032b33;font-weight:900;
+  box-shadow:0 10px 24px rgba(20,184,166,.35)
+}
+.brand-mark small{display:block;font-weight:500;font-size:11.5px;color:#9fc3d8;letter-spacing:.08em;text-transform:uppercase;margin-top:2px}
+.hero-copy{max-width:580px;position:relative;z-index:1}
+.eyebrow{
+  display:inline-flex;align-items:center;gap:8px;font-size:11.5px;font-weight:750;
+  letter-spacing:.14em;text-transform:uppercase;color:#7dd3c7;
+  border:1px solid rgba(125,211,199,.35);padding:7px 12px;border-radius:999px;margin-bottom:22px
+}
+.hero-copy h1{font-size:clamp(34px,4.4vw,56px);line-height:1.04;letter-spacing:-.035em}
+.hero-copy h1 span{color:#5eead4}
+.hero-copy p{margin-top:20px;font-size:16px;color:#b6d0e0;max-width:520px}
+.hero-points{display:grid;gap:13px;margin-top:32px}
+.hero-point{display:flex;gap:12px;align-items:flex-start;font-size:14px;color:#d7e8f2}
+.hero-point b{display:block;font-size:13.5px;color:#fff}
+.hero-point span{color:#9fc3d8;font-size:12.5px}
+.point-icon{
+  width:30px;height:30px;border-radius:9px;background:rgba(20,184,166,.15);
+  border:1px solid rgba(94,234,212,.3);display:grid;place-items:center;color:#5eead4;
+  font-size:14px;flex-shrink:0;margin-top:1px
+}
+.auth-foot{font-size:12px;color:#8fb1c7;display:flex;gap:18px;flex-wrap:wrap;position:relative;z-index:1}
+.auth-foot a{color:#b6d0e0;text-decoration:none;border-bottom:1px dashed rgba(182,208,224,.4)}
+.auth-panel{
+  display:flex;align-items:center;justify-content:center;padding:clamp(22px,4vw,56px);
+  background:linear-gradient(180deg,#f7fafc,#eef4f8)
+}
+.auth-card{
+  width:100%;max-width:470px;background:var(--card);border:1px solid var(--line);
+  border-radius:26px;padding:clamp(24px,3vw,38px);box-shadow:var(--shadow)
+}
+.auth-card h2{font-size:27px;letter-spacing:-.03em}
+.auth-card .lede{color:var(--muted);font-size:13.5px;margin-top:8px}
+.auth-form{display:grid;gap:14px;margin-top:24px}
+.auth-note{font-size:12px;color:var(--muted);text-align:center;margin-top:16px;line-height:1.55}
+
+/* Forms */
+.field{display:grid;gap:6px}
+.field label,.field-label{font-size:12.5px;font-weight:700;color:#334b61;letter-spacing:.01em}
+.field .hint{font-size:11.5px;color:var(--muted)}
+input[type=text],input[type=email],input[type=tel],input[type=password],input[type=search],select,textarea{
+  width:100%;border:1px solid var(--line-strong);border-radius:11px;padding:11px 13px;
+  background:#fbfdff;color:var(--ink);font:inherit;font-size:14px;transition:border-color .12s,box-shadow .12s
+}
+input:focus,select:focus,textarea:focus{
+  outline:0;border-color:var(--teal-strong);box-shadow:0 0 0 3px rgba(13,148,136,.14);background:#fff
+}
+textarea{min-height:110px;resize:vertical}
+.form-message{
+  padding:11px 13px;border-radius:11px;font-size:12.5px;line-height:1.45;
+  background:var(--blue-soft);color:#1e3a8a;border:1px solid #bfdbfe
+}
+.form-message.error{background:var(--red-soft);color:#7f1d1d;border-color:#fecaca}
+.form-message.success{background:var(--green-soft);color:#14532d;border-color:#bbf7d0}
+.form-message.warning{background:var(--amber-soft);color:#78350f;border-color:#fde68a}
+.form-message.info{background:var(--blue-soft);color:#1e3a8a;border-color:#bfdbfe}
+.form-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:4px}
+
+/* App shell */
+.app{min-height:100vh;display:flex;background:var(--sand)}
+.sidebar{
+  width:272px;flex-shrink:0;background:linear-gradient(180deg,var(--navy),#0a1b2d);
+  color:#dbeafe;padding:24px 16px;display:flex;flex-direction:column;gap:22px;
+  position:sticky;top:0;height:100vh;z-index:700
+}
+.sidebar .brand-mark{padding:2px 8px;color:#fff}
+.sidebar .brand-mark small{color:#8fb1c7}
+.nav{display:grid;gap:6px}
+.nav-btn{
+  display:flex;align-items:center;gap:11px;width:100%;border:0;background:transparent;
+  color:#b9cee0;text-align:left;padding:11px 12px;border-radius:11px;cursor:pointer;
+  font-weight:600;font-size:13.5px;transition:background .12s,color .12s
+}
+.nav-btn:hover{background:rgba(255,255,255,.06);color:#fff}
+.nav-btn.active{background:rgba(20,184,166,.16);color:#fff;box-shadow:inset 3px 0 0 #2dd4bf}
+.nav-btn:focus-visible{outline:2px solid #5eead4;outline-offset:2px}
+.nav-icon{width:22px;text-align:center;font-size:15px;opacity:.95}
+.sidebar-spacer{flex:1}
+.side-user{border-top:1px solid rgba(255,255,255,.1);padding-top:16px;display:grid;gap:10px}
+.side-user .who{display:flex;align-items:center;gap:10px;min-width:0}
+.avatar{
+  width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,#14b8a6,#0ea5e9);
+  display:grid;place-items:center;color:#04242a;font-weight:800;font-size:13px;flex-shrink:0
+}
+.who-name{font-size:13px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.who-role{font-size:11px;color:#8fb1c7;text-transform:capitalize}
+.side-dept{font-size:11.5px;color:#b9cee0;line-height:1.45;padding:0 2px}
+.side-dept b{display:block;color:#fff;font-size:12px}
+.side-user .btn{width:100%;justify-content:flex-start;background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.14);color:#dbeafe}
+.side-note{font-size:10.5px;color:#7694aa;line-height:1.5;padding:0 4px}
+.app-main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{
+  display:flex;align-items:center;gap:14px;padding:18px clamp(16px,3vw,34px);
+  background:rgba(242,246,249,.9);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);position:sticky;top:0;z-index:500
+}
+.topbar .titles{min-width:0}
+.topbar h1{font-size:21px;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar .sub{font-size:12px;color:var(--muted);margin-top:2px}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.role-badge{
+  display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:750;
+  background:#fff;border:1px solid var(--line);border-radius:999px;padding:7px 11px;color:#334b61
+}
+.role-badge .dot{width:8px;height:8px;border-radius:50%;background:var(--teal-strong)}
+.menu-toggle{display:none}
+.content{padding:clamp(16px,3vw,34px);display:grid;gap:20px;max-width:1500px;width:100%;margin:0 auto}
+#global-message{margin:0 clamp(16px,3vw,34px) 0}
+.view{display:grid;gap:20px}
+.panel{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:clamp(16px,2.2vw,24px);box-shadow:var(--shadow-soft)
+}
+.panel-head{display:flex;align-items:center;gap:14px;justify-content:space-between;flex-wrap:wrap;margin-bottom:14px}
+.panel h2{font-size:18px}
+.panel h3{font-size:15px}
+.panel p{color:var(--muted);font-size:13px}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px}
+.metric{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:18px;box-shadow:var(--shadow-soft);display:grid;gap:8px;cursor:pointer;
+  transition:transform .12s ease,box-shadow .12s ease;text-align:left
+}
+.metric:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.metric:focus-visible{outline:3px solid rgba(13,148,136,.35);outline-offset:2px}
+.metric .metric-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.metric .metric-label{font-size:12px;font-weight:750;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.metric .metric-icon{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--teal-soft);color:#0f766e;font-size:15px}
+.metric .metric-value{font-size:34px;font-weight:800;letter-spacing:-.04em;line-height:1}
+.metric .metric-hint{font-size:11.5px;color:var(--muted);line-height:1.4}
+.metric.amber .metric-icon{background:var(--amber-soft);color:var(--amber)}
+.metric.blue .metric-icon{background:var(--blue-soft);color:var(--blue)}
+.metric.violet .metric-icon{background:var(--violet-soft);color:var(--violet)}
+.metric.green .metric-icon{background:var(--green-soft);color:var(--green)}
+
+/* Filters and issue list */
+.filters{display:grid;grid-template-columns:1.4fr repeat(3,1fr) auto;gap:10px;align-items:end}
+.filters .field{gap:4px}
+.filters label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.issue-list{display:grid;gap:10px;margin-top:16px}
+.issue-row{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;
+  border:1px solid var(--line);border-radius:14px;padding:14px 16px;background:#fbfdff;
+  transition:border-color .12s,box-shadow .12s
+}
+.issue-row:hover{border-color:var(--line-strong);box-shadow:var(--shadow-soft)}
+.issue-main{min-width:0;display:grid;gap:5px}
+.issue-title{font-weight:750;font-size:14px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.issue-meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:11.5px;color:var(--muted)}
+.issue-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.chip{
+  display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:5px 9px;
+  font-size:11px;font-weight:750;border:1px solid transparent;white-space:nowrap
+}
+.chip.status-reported{background:var(--blue-soft);color:#1e40af}
+.chip.status-acknowledged{background:var(--amber-soft);color:#92400e}
+.chip.status-in_progress{background:var(--violet-soft);color:#5b21b6}
+.chip.status-resolved{background:var(--green-soft);color:#166534}
+.chip.status-rejected{background:var(--red-soft);color:#991b1b}
+.chip.status-duplicate{background:#e2e8f0;color:#475569}
+.chip.status-unknown{background:#e2e8f0;color:#475569}
+.chip.priority-low{background:#e2e8f0;color:#475569}
+.chip.priority-medium{background:var(--blue-soft);color:#1e40af}
+.chip.priority-high{background:var(--amber-soft);color:#92400e}
+.chip.priority-critical{background:var(--red-soft);color:#991b1b}
+.chip.claim-unclaimed{background:var(--amber-soft);color:#92400e}
+.chip.claim-mine{background:var(--green-soft);color:#166534}
+.chip.claim-other{background:#e2e8f0;color:#475569}
+.empty{
+  border:1px dashed var(--line-strong);border-radius:14px;padding:26px;text-align:center;
+  background:#fbfdff;display:grid;gap:6px
+}
+.empty h3{font-size:15px;color:var(--ink)}
+.empty p{font-size:12.5px;color:var(--muted);max-width:560px;margin:0 auto}
+
+/* Detail */
+.detail-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.detail-head{display:flex;align-items:flex-start;gap:16px;justify-content:space-between;flex-wrap:wrap}
+.detail-head .titles{min-width:0;display:grid;gap:6px}
+.detail-head h2{font-size:clamp(20px,2.4vw,28px);letter-spacing:-.03em}
+.detail-head .ticket{font-size:12px;font-weight:750;color:var(--muted);letter-spacing:.04em}
+.detail-chips{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.detail-grid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(280px,.9fr);gap:18px;align-items:start}
+.detail-stack{display:grid;gap:18px}
+.kv-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px 18px}
+.kv{display:grid;gap:3px;border-bottom:1px solid #edf2f7;padding-bottom:8px;min-width:0}
+.kv-label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:750}
+.kv-value{font-size:13px;color:var(--ink);overflow-wrap:anywhere}
+.kv-value.pre{white-space:pre-wrap;line-height:1.5}
+.reason-list{margin:0;padding-left:18px;display:grid;gap:5px;font-size:13px;color:var(--ink)}
+.map-canvas{height:320px;border-radius:14px;border:1px solid var(--line);background:#e8eff5;overflow:hidden}
+.coords{font-size:12px;color:var(--muted);margin-top:8px}
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;margin-top:12px}
+.evidence{
+  border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#fbfdff;
+  display:grid;grid-template-rows:150px auto
+}
+.evidence .thumb{background:#e8eff5;display:grid;place-items:center;overflow:hidden}
+.evidence .thumb img{width:100%;height:100%;object-fit:cover}
+.evidence .thumb .loading{font-size:11.5px;color:var(--muted);padding:10px;text-align:center}
+.evidence figcaption{padding:9px 11px;display:grid;gap:2px;font-size:11px;color:var(--muted)}
+.evidence figcaption b{font-size:11.5px;color:var(--ink)}
+.timeline{display:grid;gap:0;margin-top:12px}
+.timeline-item{display:grid;grid-template-columns:14px minmax(0,1fr);gap:12px;position:relative;padding-bottom:18px}
+.timeline-item:last-child{padding-bottom:0}
+.timeline-dot{
+  width:12px;height:12px;border-radius:50%;background:var(--teal-strong);margin-top:5px;
+  box-shadow:0 0 0 4px rgba(13,148,136,.12);z-index:1
+}
+.timeline-item:not(:last-child)::before{
+  content:"";position:absolute;left:5px;top:17px;bottom:0;width:2px;background:var(--line)
+}
+.timeline-body{display:grid;gap:4px;min-width:0}
+.timeline-top{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.timeline-comment{font-size:13px;color:var(--ink);white-space:pre-wrap;overflow-wrap:anywhere}
+.timeline-meta{font-size:11.5px;color:var(--muted)}
+.action-panel{display:grid;gap:12px}
+.action-panel .note{font-size:12.5px;color:var(--muted);line-height:1.5}
+.status-form{display:grid;gap:12px}
+.status-form .row{display:grid;grid-template-columns:minmax(0,.7fr) minmax(0,1.3fr);gap:10px;align-items:start}
+.notice{
+  border:1px solid #fde68a;background:var(--amber-soft);color:#78350f;border-radius:12px;
+  padding:11px 13px;font-size:12.5px;line-height:1.5
+}
+.notice.info{border-color:#bfdbfe;background:var(--blue-soft);color:#1e3a8a}
+.notice.success{border-color:#bbf7d0;background:var(--green-soft);color:#14532d}
+.notice.error{border-color:#fecaca;background:var(--red-soft);color:#7f1d1d}
+
+/* Profile */
+.profile-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px}
+.profile-card{display:grid;gap:14px}
+.profile-avatar{
+  width:64px;height:64px;border-radius:18px;background:linear-gradient(135deg,#14b8a6,#0ea5e9);
+  display:grid;place-items:center;color:#04242a;font-weight:900;font-size:22px
+}
+.profile-card h2{font-size:20px}
+.profile-card .email{font-size:12.5px;color:var(--muted);overflow-wrap:anywhere}
+
+/* Responsive */
+@media (max-width:1100px){
+  .filters{grid-template-columns:1fr 1fr}
+  .filters .search-field{grid-column:1/-1}
+  .detail-grid{grid-template-columns:1fr}
+}
+@media (max-width:900px){
+  .auth-shell{grid-template-columns:1fr}
+  .auth-hero{min-height:auto;padding-bottom:34px}
+  .auth-hero .hero-points{display:none}
+  .auth-panel{padding-top:0}
+  .sidebar{
+    position:fixed;left:0;top:0;bottom:0;transform:translateX(-105%);
+    transition:transform .18s ease;box-shadow:0 0 40px rgba(0,0,0,.3)
+  }
+  .sidebar.open{transform:translateX(0)}
+  .menu-toggle{display:inline-flex}
+  .topbar-right .role-badge.dept{display:none}
+}
+@media (max-width:640px){
+  .content{padding:14px}
+  .metrics{grid-template-columns:1fr 1fr}
+  .metric .metric-value{font-size:28px}
+  .issue-row{grid-template-columns:1fr}
+  .issue-actions{justify-content:flex-start}
+  .filters{grid-template-columns:1fr}
+  .status-form .row{grid-template-columns:1fr}
+  .topbar h1{font-size:18px}
+}
+</style>
+</head>
+<body>
+
+<div id="auth-shell" class="auth-shell">
+  <section class="auth-hero">
+    <div class="brand-mark">
+      <span class="brand-logo" aria-hidden="true">U</span>
+      <div>UIMRS<small>Municipal operations</small></div>
+    </div>
+    <div class="hero-copy">
+      <span class="eyebrow">Officer workspace</span>
+      <h1>Resolve civic complaints with <span>verified department ownership.</span></h1>
+      <p>Sign in with an account provisioned by your municipal administrator. The portal shows only live, automatically routed complaints for your exact department and city.</p>
+      <div class="hero-points">
+        <div class="hero-point"><span class="point-icon" aria-hidden="true">1</span><div><b>Department-scoped queue</b><span>Historical records and manual-review complaints stay out of operational queues.</span></div></div>
+        <div class="hero-point"><span class="point-icon" aria-hidden="true">2</span><div><b>Claim before you act</b><span>Ownership is atomic, so two officers cannot overwrite each other's claim.</span></div></div>
+        <div class="hero-point"><span class="point-icon" aria-hidden="true">3</span><div><b>Auditable resolution</b><span>Every status change requires a remark and records the authenticated officer.</span></div></div>
+      </div>
+    </div>
+    <div class="auth-foot">
+      <span>UIMRS officer portal</span>
+      <a href="/citizen">Citizen portal</a>
+      <a href="/">Historical dashboard</a>
+    </div>
+  </section>
+  <section class="auth-panel">
+    <div class="auth-card">
+      <span class="eyebrow" style="color:#0f766e;border-color:#99f6e4;background:#f0fdfa">Authorised staff</span>
+      <h2>Officer sign in</h2>
+      <p class="lede">Use the official e-mail address and initial password provided by your municipal administrator. Public registration cannot create officer accounts.</p>
+      <form id="login-form" class="auth-form" autocomplete="on">
+        <div class="field">
+          <label for="login-email">Official e-mail</label>
+          <input id="login-email" name="email" type="email" autocomplete="username" placeholder="officer@department.gov.in" required>
+        </div>
+        <div class="field">
+          <label for="login-password">Password</label>
+          <input id="login-password" name="password" type="password" autocomplete="current-password" placeholder="Enter your password" required>
+        </div>
+        <button id="login-submit" class="btn primary" type="submit">Sign in securely</button>
+      </form>
+      <div id="login-message" class="form-message error hidden" role="alert" aria-live="polite"></div>
+      <p class="auth-note">This workspace is restricted to municipal officers. Citizens should use the <a href="/citizen">citizen portal</a>. Officer accounts are created only through the controlled provisioning utility.</p>
+    </div>
+  </section>
+</div>
+
+<div id="app-shell" class="app hidden">
+  <aside id="sidebar" class="sidebar">
+    <div class="brand-mark">
+      <span class="brand-logo" aria-hidden="true">U</span>
+      <div>UIMRS<small>Operations</small></div>
+    </div>
+    <nav class="nav" aria-label="Officer workspace">
+      <button type="button" class="nav-btn active" data-view="dashboard"><span class="nav-icon" aria-hidden="true">▦</span>Dashboard</button>
+      <button type="button" class="nav-btn" data-view="queue" data-scope="queue"><span class="nav-icon" aria-hidden="true">☰</span>Live queue</button>
+      <button type="button" class="nav-btn" data-view="queue" data-scope="unclaimed"><span class="nav-icon" aria-hidden="true">◎</span>Unclaimed</button>
+      <button type="button" class="nav-btn" data-view="queue" data-scope="mine"><span class="nav-icon" aria-hidden="true">✓</span>My assigned complaints</button>
+      <button type="button" class="nav-btn" data-view="queue" data-scope="all"><span class="nav-icon" aria-hidden="true">▤</span>All live complaints</button>
+      <button type="button" class="nav-btn" data-view="profile"><span class="nav-icon" aria-hidden="true">◉</span>Profile</button>
+    </nav>
+    <div class="sidebar-spacer"></div>
+    <div class="side-user">
+      <div class="who">
+        <span id="side-avatar" class="avatar" aria-hidden="true">—</span>
+        <div style="min-width:0">
+          <div id="side-name" class="who-name">Loading officer…</div>
+          <div id="side-role" class="who-role">Officer</div>
+        </div>
+      </div>
+      <div id="side-dept" class="side-dept">Department details load after sign-in.</div>
+      <button id="profile-button" type="button" class="btn small"><span aria-hidden="true">◉</span>Profile</button>
+      <button id="logout-button" type="button" class="btn small"><span aria-hidden="true">⇥</span>Log out</button>
+      <p class="side-note">Session token is held in sessionStorage for this tab only. Signing out clears it.</p>
+    </div>
+  </aside>
+
+  <main class="app-main">
+    <header class="topbar">
+      <button id="menu-toggle" class="icon-btn menu-toggle" type="button" aria-label="Open navigation">☰</button>
+      <div class="titles">
+        <h1 id="view-title">Operations dashboard</h1>
+        <p id="view-subtitle" class="sub">Live department workload from the UIMRS backend.</p>
+      </div>
+      <div class="topbar-right">
+        <span id="dept-badge" class="role-badge dept"><span class="dot"></span>Department</span>
+        <span id="user-badge" class="role-badge"><span class="dot"></span>Officer</span>
+      </div>
+    </header>
+
+    <div id="global-message" class="form-message info hidden" role="status" aria-live="polite"></div>
+
+    <div class="content">
+      <section id="view-dashboard" class="view">
+        <div id="dashboard-cards" class="metrics"></div>
+        <section class="panel">
+          <div class="panel-head">
+            <div><h2>Queue snapshot</h2><p>Five highest-priority open complaints in your live routed queue.</p></div>
+            <button id="dashboard-open-queue" type="button" class="btn small">Open live queue</button>
+          </div>
+          <div id="dashboard-recent" class="issue-list"></div>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><div><h2>Department scope</h2><p>How this workspace decides what you can see.</p></div></div>
+          <p id="scope-note" class="muted">Department scope loads from the authenticated officer account.</p>
+        </section>
+      </section>
+
+      <section id="view-queue" class="view hidden">
+        <section class="panel">
+          <div class="panel-head">
+            <div><h2 id="queue-heading">Live complaint queue</h2><p id="queue-description">Live, automatically routed complaints for your department and city.</p></div>
+            <button id="refresh-queue" type="button" class="btn small">Refresh</button>
+          </div>
+          <div class="filters">
+            <div class="field search-field">
+              <label for="search-input">Search</label>
+              <input id="search-input" type="search" placeholder="Ticket, title or description" autocomplete="off">
+            </div>
+            <div class="field">
+              <label for="filter-status">Status</label>
+              <select id="filter-status">
+                <option value="">All statuses</option>
+                <option value="reported">Reported</option>
+                <option value="acknowledged">Acknowledged</option>
+                <option value="in_progress">In progress</option>
+                <option value="resolved">Resolved</option>
+                <option value="rejected">Rejected</option>
+                <option value="duplicate">Duplicate</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="filter-category">Category</label>
+              <select id="filter-category">
+                <option value="">All categories</option>
+                <option value="Road_Damage">Road damage</option>
+                <option value="Garbage_Waste">Garbage &amp; waste</option>
+                <option value="Streetlight">Streetlight</option>
+                <option value="Water_Supply">Water supply</option>
+                <option value="Drainage_Sewage">Drainage &amp; sewage</option>
+                <option value="Traffic_Signal">Traffic signal</option>
+                <option value="Traffic_Management">Traffic management</option>
+                <option value="Trees_Environment">Trees &amp; environment</option>
+                <option value="Illegal_Construction">Illegal construction</option>
+                <option value="Public_Property_Damage">Public property damage</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="filter-priority">Priority</label>
+              <select id="filter-priority">
+                <option value="">All priorities</option>
+                <option value="Low">Low</option>
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
+                <option value="Critical">Critical</option>
+              </select>
+            </div>
+            <button id="clear-filters" type="button" class="btn small ghost">Clear</button>
+          </div>
+          <div id="queue-status" class="form-message info hidden" role="status" aria-live="polite"></div>
+          <div id="queue-list" class="issue-list"></div>
+        </section>
+      </section>
+
+      <section id="view-detail" class="view hidden">
+        <div class="detail-toolbar">
+          <button id="back-to-list" type="button" class="btn small">← Back to list</button>
+        </div>
+        <div id="detail-content"></div>
+      </section>
+
+      <section id="view-profile" class="view hidden">
+        <div id="profile-content" class="profile-grid"></div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script>
+"use strict";
+
+const API_PREFIX = "/api/v1";
+const TOKEN_KEY = "uimrs_officer_token";
+const STATUSES = ["reported", "acknowledged", "in_progress", "resolved", "rejected", "duplicate"];
+const STATUS_LABELS = {
+  reported: "Reported",
+  acknowledged: "Acknowledged",
+  in_progress: "In progress",
+  resolved: "Resolved",
+  rejected: "Rejected",
+  duplicate: "Duplicate"
+};
+const ALLOWED_TRANSITIONS = {
+  reported: ["acknowledged", "in_progress", "resolved", "rejected", "duplicate"],
+  acknowledged: ["in_progress", "resolved", "rejected", "duplicate"],
+  in_progress: ["resolved", "rejected", "duplicate"],
+  resolved: [],
+  rejected: [],
+  duplicate: []
+};
+const VIEW_TITLES = {
+  dashboard: ["Operations dashboard", "Live department workload from the UIMRS backend."],
+  queue: ["Live complaint queue", "Live, automatically routed complaints for your department and city."],
+  detail: ["Complaint detail", "Citizen evidence, AI explanation, routing and audit history."],
+  profile: ["Officer profile", "Your authenticated identity and department."]
+};
+
+const state = {
+  token: null,
+  user: null,
+  overview: null,
+  view: "dashboard",
+  scope: "queue",
+  issues: [],
+  selectedIssueId: null,
+  detail: null,
+  detailMap: null,
+  evidenceUrls: [],
+  searchTimer: null
+};
+
+function byId(id) { return document.getElementById(id); }
+
+function make(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined && text !== null) node.textContent = String(text);
+  return node;
+}
+
+function append(parent) {
+  for (let index = 1; index < arguments.length; index += 1) {
+    const child = arguments[index];
+    if (child !== null && child !== undefined) parent.appendChild(child);
+  }
+  return parent;
+}
+
+function clear(node) {
+  if (node) node.replaceChildren();
+}
+
+function setMessage(node, text, kind) {
+  if (!node) return;
+  const value = (text || "").trim();
+  node.textContent = value;
+  node.className = "form-message " + (kind || "info") + (value ? "" : " hidden");
+}
+
+function setGlobalMessage(text, kind) {
+  setMessage(byId("global-message"), text, kind || "info");
+}
+
+function setLoginMessage(text, kind) {
+  setMessage(byId("login-message"), text, kind || "error");
+}
+
+function statusLabel(value) {
+  return STATUS_LABELS[String(value)] || "Unknown";
+}
+
+function statusChip(value) {
+  const key = STATUSES.includes(String(value)) ? String(value) : "unknown";
+  return make("span", "chip status-" + key, statusLabel(key));
+}
+
+function priorityChip(value) {
+  if (!value) return make("span", "chip priority-low", "Priority unavailable");
+  const key = String(value).toLowerCase();
+  return make("span", "chip priority-" + key, value);
+}
+
+function formatDate(value) {
+  if (!value) return "Not available";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return String(value);
+  return parsed.toLocaleString();
+}
+
+function initials(name) {
+  const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "—";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+}
+
+function safeText(value, fallback) {
+  if (value === null || value === undefined || value === "") return fallback || "Not available";
+  return String(value);
+}
+
+function kvRow(label, value, pre) {
+  const row = make("div", "kv");
+  append(row, make("span", "kv-label", label));
+  append(row, make("span", pre ? "kv-value pre" : "kv-value", safeText(value)));
+  return row;
+}
+
+function chipRow(issue) {
+  const row = make("div", "issue-meta");
+  append(row, statusChip(issue.status), priorityChip(issue.priority_level));
+  const claim = claimChip(issue);
+  if (claim) append(row, claim);
+  return row;
+}
+
+function claimChip(issue) {
+  if (!state.user) return null;
+  if (!issue.assigned_officer_id) return make("span", "chip claim-unclaimed", "Unclaimed");
+  if (issue.assigned_officer_id === state.user.id) return make("span", "chip claim-mine", "Assigned to you");
+  return make("span", "chip claim-other", "Assigned to another officer");
+}
+
+function emptyState(title, detail) {
+  const box = make("div", "empty");
+  append(box, make("h3", "", title), make("p", "", detail));
+  return box;
+}
+
+function authHeaders(extra) {
+  const headers = Object.assign({}, extra || {});
+  if (state.token) headers.Authorization = "Bearer " + state.token;
+  return headers;
+}
+
+function errorDetail(data, statusCode) {
+  if (data && typeof data === "object") {
+    if (typeof data.detail === "string") return data.detail;
+    if (Array.isArray(data.detail)) {
+      return data.detail.map(function (item) {
+        return item && item.msg ? item.msg : "Invalid value";
+      }).join("; ");
+    }
+  }
+  return "Request failed (HTTP " + statusCode + ").";
+}
+
+async function api(path, options) {
+  const settings = Object.assign({}, options || {});
+  const headers = authHeaders(settings.headers);
+  if (settings.body && typeof settings.body === "string" && !headers["Content-Type"]) {
+    headers["Content-Type"] = "application/json";
+  }
+  const response = await fetch(API_PREFIX + path, Object.assign({}, settings, { headers: headers }));
+  const text = await response.text();
+  let data = null;
+  if (text) {
+    try { data = JSON.parse(text); } catch (error) { data = text; }
+  }
+  if (!response.ok) {
+    if (response.status === 401) handleAuthExpired();
+    throw new Error(errorDetail(data, response.status));
+  }
+  return data;
+}
+
+function handleAuthExpired() {
+  if (!state.token) return;
+  logout(false);
+  setLoginMessage("Your session has expired. Sign in again.", "error");
+}
+
+function showAuth() {
+  byId("app-shell").classList.add("hidden");
+  byId("auth-shell").classList.remove("hidden");
+}
+
+function showApp() {
+  byId("auth-shell").classList.add("hidden");
+  byId("app-shell").classList.remove("hidden");
+}
+
+function clearEvidenceUrls() {
+  state.evidenceUrls.forEach(function (url) {
+    try { URL.revokeObjectURL(url); } catch (error) { /* ignore */ }
+  });
+  state.evidenceUrls = [];
+}
+
+function clearDetailMap() {
+  if (state.detailMap) {
+    try { state.detailMap.remove(); } catch (error) { /* ignore */ }
+    state.detailMap = null;
+  }
+}
+
+function resetSessionState() {
+  clearEvidenceUrls();
+  clearDetailMap();
+  state.user = null;
+  state.overview = null;
+  state.issues = [];
+  state.selectedIssueId = null;
+  state.detail = null;
+  state.view = "dashboard";
+  state.scope = "queue";
+}
+
+function logout(showNotice) {
+  state.token = null;
+  resetSessionState();
+  try { window.sessionStorage.removeItem(TOKEN_KEY); } catch (error) { /* ignore */ }
+  byId("login-form").reset();
+  byId("sidebar").classList.remove("open");
+  showAuth();
+  if (showNotice !== false) setLoginMessage("You have been signed out.", "info");
+}
+
+async function login(email, password) {
+  const response = await fetch(API_PREFIX + "/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: email, password: password })
+  });
+  const text = await response.text();
+  let data = null;
+  if (text) {
+    try { data = JSON.parse(text); } catch (error) { data = text; }
+  }
+  if (!response.ok) throw new Error(errorDetail(data, response.status));
+  if (!data || !data.access_token || !data.user) throw new Error("The login response was incomplete.");
+  if (String(data.user.role).toLowerCase() !== "officer") {
+    throw new Error("This portal is restricted to authorised municipal officers. Citizen accounts cannot sign in here.");
+  }
+  state.token = data.access_token;
+  try { window.sessionStorage.setItem(TOKEN_KEY, state.token); } catch (error) { /* ignore */ }
+  try {
+    await loadSession();
+  } catch (error) {
+    logout(false);
+    throw error;
+  }
+}
+
+async function loadSession() {
+  const me = await api("/auth/me");
+  if (String(me.role).toLowerCase() !== "officer") {
+    throw new Error("This portal is restricted to authorised municipal officers.");
+  }
+  state.user = me;
+  await loadOverview();
+  showApp();
+  renderProfile();
+  navigate("dashboard");
+}
+
+async function loadOverview() {
+  state.overview = await api("/officer/overview");
+  renderIdentity();
+  renderDashboard();
+}
+
+function renderIdentity() {
+  const user = state.user;
+  const overview = state.overview;
+  if (!user) return;
+  byId("side-avatar").textContent = initials(user.name);
+  byId("side-name").textContent = user.name || "Officer";
+  byId("side-role").textContent = user.role || "officer";
+  byId("user-badge").textContent = "";
+  append(byId("user-badge"), make("span", "dot"), document.createTextNode(user.name || "Officer"));
+
+  const department = overview ? overview.department : null;
+  const deptBox = byId("side-dept");
+  clear(deptBox);
+  if (department) {
+    append(deptBox, make("b", "", department.name), document.createTextNode(
+      (department.city || "City unavailable") + (department.handles_category ? " · " + department.handles_category : "")
+    ));
+    byId("dept-badge").textContent = "";
+    append(byId("dept-badge"), make("span", "dot"), document.createTextNode(department.short_name || department.name));
+    byId("scope-note").textContent =
+      "This workspace is scoped to " + department.name + " in " + (department.city || "an unspecified city") +
+      ". It includes only live complaints with verified automatic routing to this department and city. Historical records and manual-review complaints are excluded.";
+  } else {
+    deptBox.textContent = "Department details unavailable.";
+  }
+}
+
+function metricCard(label, value, hint, icon, tone, handler) {
+  const card = make("button", "metric " + (tone || ""), "");
+  card.type = "button";
+  const top = make("div", "metric-top");
+  append(top, make("span", "metric-label", label), make("span", "metric-icon", icon));
+  append(card, top, make("span", "metric-value", value), make("span", "metric-hint", hint));
+  card.addEventListener("click", handler);
+  return card;
+}
+
+function renderDashboard() {
+  const container = byId("dashboard-cards");
+  clear(container);
+  if (!state.overview || !state.overview.counts) {
+    container.appendChild(emptyState("Dashboard unavailable", "Sign in again to load your department overview."));
+    return;
+  }
+  const counts = state.overview.counts;
+  append(container,
+    metricCard("New reported", counts.new_reported, "Live routed complaints still in reported status.", "◷", "blue", function () {
+      byId("filter-status").value = "reported";
+      navigate("queue", "queue");
+    }),
+    metricCard("Unclaimed", counts.unclaimed, "Active complaints nobody has claimed yet.", "◎", "amber", function () {
+      byId("filter-status").value = "";
+      navigate("queue", "unclaimed");
+    }),
+    metricCard("Assigned to me", counts.assigned_to_me, "All complaints currently owned by your account.", "✓", "green", function () {
+      byId("filter-status").value = "";
+      navigate("queue", "mine");
+    }),
+    metricCard("In progress", counts.in_progress, "Department complaints currently being worked.", "▶", "violet", function () {
+      byId("filter-status").value = "in_progress";
+      navigate("queue", "queue");
+    }),
+    metricCard("Resolved", counts.resolved, "Department complaints resolved through this workflow.", "●", "green", function () {
+      byId("filter-status").value = "resolved";
+      navigate("queue", "all");
+    }),
+    metricCard("Live routed total", counts.total_live_routed, "All live complaints verified-routed to this department.", "▤", "", function () {
+      byId("filter-status").value = "";
+      navigate("queue", "all");
+    })
+  );
+  renderDashboardRecent();
+}
+
+async function renderDashboardRecent() {
+  const container = byId("dashboard-recent");
+  clear(container);
+  container.appendChild(make("p", "muted", "Loading recent complaints."));
+  try {
+    const rows = await api("/officer/issues?scope=queue&limit=5");
+    renderIssueList(container, rows, "No open complaints", "There are no live routed complaints in your department queue right now.");
+  } catch (error) {
+    container.replaceChildren(emptyState("Could not load the queue snapshot", error.message));
+  }
+}
+
+function renderIssueList(container, rows, emptyTitle, emptyDetail) {
+  clear(container);
+  if (!rows || !rows.length) {
+    container.appendChild(emptyState(emptyTitle, emptyDetail));
+    return;
+  }
+  const fragment = document.createDocumentFragment();
+  rows.forEach(function (issue) {
+    const row = make("article", "issue-row");
+    const main = make("div", "issue-main");
+    append(main, make("div", "issue-title", safeText(issue.title, "Untitled complaint")));
+    append(main, chipRow(issue));
+    append(main, make("div", "issue-meta",
+      safeText(issue.ticket_number, "Ticket unavailable") + " · " +
+      safeText(issue.category, "Category unavailable") + " · " +
+      formatDate(issue.created_at)
+    ));
+    const actions = make("div", "issue-actions");
+    const open = make("button", "btn small primary", "Open complaint");
+    open.type = "button";
+    open.addEventListener("click", function () { openIssue(issue.id); });
+    append(actions, open);
+    append(row, main, actions);
+    fragment.appendChild(row);
+  });
+  container.appendChild(fragment);
+}
+
+function updateTitles() {
+  const base = VIEW_TITLES[state.view] || VIEW_TITLES.dashboard;
+  let title = base[0];
+  let subtitle = base[1];
+  if (state.view === "queue") {
+    if (state.scope === "unclaimed") {
+      title = "Unclaimed complaints";
+      subtitle = "Active live routed complaints that no officer has claimed.";
+    } else if (state.scope === "mine") {
+      title = "My assigned complaints";
+      subtitle = "Complaints assigned to your account, including closed records.";
+    } else if (state.scope === "all") {
+      title = "All live complaints";
+      subtitle = "Every live complaint verified-routed to your department and city.";
+    }
+    byId("queue-heading").textContent = title;
+    byId("queue-description").textContent = subtitle;
+  }
+  byId("view-title").textContent = title;
+  byId("view-subtitle").textContent = subtitle;
+}
+
+function navigate(view, scope) {
+  if (scope) state.scope = scope;
+  state.view = view;
+  document.querySelectorAll(".view").forEach(function (section) {
+    section.classList.add("hidden");
+  });
+  const target = byId("view-" + view);
+  if (target) target.classList.remove("hidden");
+  document.querySelectorAll(".nav-btn").forEach(function (button) {
+    const matchesView = button.getAttribute("data-view") === view;
+    const buttonScope = button.getAttribute("data-scope");
+    const matchesScope = !buttonScope || buttonScope === state.scope;
+    button.classList.toggle("active", matchesView && matchesScope);
+  });
+  byId("sidebar").classList.remove("open");
+  updateTitles();
+  if (view === "dashboard") renderDashboard();
+  if (view === "queue") loadIssues();
+  if (view === "profile") renderProfile();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+async function loadIssues() {
+  const statusBox = byId("queue-status");
+  setMessage(statusBox, "Loading complaints.", "info");
+  const params = new URLSearchParams();
+  params.set("scope", state.scope);
+  params.set("limit", "100");
+  const status = byId("filter-status").value;
+  const category = byId("filter-category").value;
+  const priority = byId("filter-priority").value;
+  const search = byId("search-input").value.trim();
+  if (status) params.set("status", status);
+  if (category) params.set("category", category);
+  if (priority) params.set("priority", priority);
+  if (search) params.set("q", search);
+  try {
+    const rows = await api("/officer/issues?" + params.toString());
+    state.issues = rows;
+    setMessage(statusBox, "", "info");
+    const emptyTitle = state.scope === "mine" ? "No complaints assigned to you" : "No complaints in this view";
+    const emptyDetail = "The backend returned no live routed complaints for your department and city matching the current scope and filters.";
+    renderIssueList(byId("queue-list"), rows, emptyTitle, emptyDetail);
+  } catch (error) {
+    setMessage(statusBox, error.message, "error");
+    byId("queue-list").replaceChildren(emptyState("Could not load complaints", error.message));
+  }
+}
+
+async function openIssue(issueId) {
+  setGlobalMessage("Loading complaint detail.", "info");
+  try {
+    state.detail = await api("/officer/issues/" + encodeURIComponent(issueId));
+    state.selectedIssueId = issueId;
+    navigate("detail");
+    renderDetail();
+    setGlobalMessage("", "info");
+  } catch (error) {
+    setGlobalMessage(error.message, "error");
+  }
+}
+
+function mapPopup(issue) {
+  const box = document.createElement("div");
+  append(box, make("strong", "", safeText(issue.ticket_number, "Complaint")));
+  append(box, make("p", "", safeText(issue.title, "Untitled complaint")));
+  return box;
+}
+
+function initDetailMap(issue) {
+  const mapElement = byId("detail-map");
+  if (!mapElement) return;
+  clearDetailMap();
+  if (!window.L || typeof issue.latitude !== "number" || typeof issue.longitude !== "number") {
+    mapElement.replaceChildren(make("p", "muted", "Map library unavailable. Recorded coordinates: " +
+      safeText(issue.latitude) + ", " + safeText(issue.longitude)));
+    return;
+  }
+  try {
+    const map = window.L.map(mapElement, { scrollWheelZoom: false }).setView([issue.latitude, issue.longitude], 16);
+    window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "&copy; OpenStreetMap contributors"
+    }).addTo(map);
+    window.L.marker([issue.latitude, issue.longitude]).addTo(map).bindPopup(mapPopup(issue));
+    state.detailMap = map;
+    window.setTimeout(function () {
+      try { map.invalidateSize(); } catch (error) { /* ignore */ }
+    }, 0);
+  } catch (error) {
+    mapElement.replaceChildren(make("p", "muted", "Map could not be initialised. Recorded coordinates: " +
+      safeText(issue.latitude) + ", " + safeText(issue.longitude)));
+  }
+}
+
+function detailHeader(issue, permissions) {
+  const head = make("div", "detail-head");
+  const titles = make("div", "titles");
+  append(titles, make("span", "ticket", safeText(issue.ticket_number, "Ticket unavailable")));
+  append(titles, make("h2", "", safeText(issue.title, "Untitled complaint")));
+  const chips = make("div", "detail-chips");
+  append(chips, statusChip(issue.status), priorityChip(issue.priority_level));
+  const claim = claimChip(issue);
+  if (claim) append(chips, claim);
+  append(titles, chips);
+  append(head, titles);
+  if (permissions && permissions.can_claim) {
+    const button = make("button", "btn primary", "Claim complaint");
+    button.type = "button";
+    button.addEventListener("click", function () { claimComplaint(issue.id, button); });
+    append(head, button);
+  }
+  return head;
+}
+
+async function claimComplaint(issueId, button) {
+  button.disabled = true;
+  try {
+    await api("/officer/issues/" + encodeURIComponent(issueId) + "/claim", { method: "POST" });
+    setGlobalMessage("Complaint claimed successfully. You can now update its status.", "success");
+    await loadOverview();
+    await openIssue(issueId);
+  } catch (error) {
+    setGlobalMessage(error.message, "error");
+    button.disabled = false;
+  }
+}
+
+function classificationPanel(issue) {
+  const panel = make("section", "panel");
+  append(panel, make("h2", "", "AI classification and priority"));
+  const grid = make("div", "kv-grid");
+  append(grid,
+    kvRow("Category", issue.category),
+    kvRow("Classification source", issue.category_source || "Not available"),
+    kvRow("Score kind", issue.category_score_kind || "Not available"),
+    kvRow("Raw score", issue.category_confidence === null || issue.category_confidence === undefined ? "Not available" : String(issue.category_confidence)),
+    kvRow("Model version", issue.category_model_version || "Not available"),
+    kvRow("Human review required", issue.category_needs_review === null || issue.category_needs_review === undefined ? "Not recorded" : (issue.category_needs_review ? "Yes" : "No")),
+    kvRow("Review reason", issue.category_review_reason || "Not recorded"),
+    kvRow("Priority level", issue.priority_level || "Not available"),
+    kvRow("Priority score", issue.priority_score === null || issue.priority_score === undefined ? "Not available" : String(issue.priority_score))
+  );
+  append(panel, grid);
+  if (Array.isArray(issue.category_top_alternatives) && issue.category_top_alternatives.length) {
+    const wrap = make("div", "kv");
+    append(wrap, make("span", "kv-label", "Model alternatives"));
+    const list = make("ul", "reason-list");
+    issue.category_top_alternatives.forEach(function (item) {
+      const category = item && item.category ? item.category : "Unknown";
+      const score = item && item.model_score !== undefined ? String(item.model_score) : "unavailable";
+      list.appendChild(make("li", "", category + " — " + score));
+    });
+    append(wrap, list);
+    append(panel, wrap);
+  }
+  if (Array.isArray(issue.priority_reasons) && issue.priority_reasons.length) {
+    const wrap = make("div", "kv");
+    append(wrap, make("span", "kv-label", "Priority reasons"));
+    const list = make("ul", "reason-list");
+    issue.priority_reasons.forEach(function (reason) {
+      list.appendChild(make("li", "", String(reason)));
+    });
+    append(wrap, list);
+    append(panel, wrap);
+  } else {
+    append(panel, make("p", "muted", "No priority reasons were recorded for this complaint."));
+  }
+  return panel;
+}
+
+function routingPanel(issue) {
+  const panel = make("section", "panel");
+  append(panel, make("h2", "", "Routing and location"));
+  const grid = make("div", "kv-grid");
+  append(grid,
+    kvRow("Routing status", issue.routing_status || "Not recorded"),
+    kvRow("Ticket number", issue.ticket_number || "Not available"),
+    kvRow("Submitted", formatDate(issue.created_at)),
+    kvRow("Last updated", formatDate(issue.updated_at)),
+    kvRow("Resolved at", issue.resolved_at ? formatDate(issue.resolved_at) : "Not resolved"),
+    kvRow("City", issue.city || "Not recorded"),
+    kvRow("Address", issue.address_text || "Not recorded"),
+    kvRow("Coordinates", safeText(issue.latitude) + ", " + safeText(issue.longitude)),
+    kvRow("Duplicate count", issue.duplicate_count === null || issue.duplicate_count === undefined ? "0" : String(issue.duplicate_count))
+  );
+  append(panel, grid);
+  const reason = make("div", "kv");
+  append(reason, make("span", "kv-label", "Routing reason"));
+  append(reason, make("span", "kv-value pre", safeText(issue.routing_reason, "No routing reason was recorded.")));
+  append(panel, reason);
+  const map = make("div", "map-canvas");
+  map.id = "detail-map";
+  append(panel, map);
+  append(panel, make("p", "coords", "Recorded coordinates: " + safeText(issue.latitude) + ", " + safeText(issue.longitude) +
+    ". The map uses OpenStreetMap tiles and the stored complaint coordinates."));
+  return panel;
+}
+
+function evidencePanel(issue, images) {
+  const panel = make("section", "panel");
+  append(panel, make("h2", "", "Citizen evidence"));
+  if (!images || !images.length) {
+    append(panel, emptyState("No evidence photographs", "This complaint has no stored citizen evidence photographs."));
+    return panel;
+  }
+  append(panel, make("p", "muted", "Evidence is served only through the authenticated UIMRS endpoint. Images are loaded with your bearer token and are never exposed through a public directory."));
+  const gallery = make("div", "gallery");
+  images.forEach(function (image) {
+    const figure = make("figure", "evidence");
+    const thumb = make("div", "thumb");
+    const loading = make("span", "loading", "Loading evidence…");
+    thumb.appendChild(loading);
+    const img = document.createElement("img");
+    img.alt = "Citizen-submitted evidence for " + safeText(issue.ticket_number, "complaint");
+    // The image is detached until its load event fires, so lazy loading would
+    // never start. Evidence is already fetched as an authenticated blob.
+    img.loading = "eager";
+    const caption = make("figcaption");
+    append(caption,
+      make("b", "", image.passed_verification ? "Passed verification" : "Stored evidence"),
+      make("span", "", "Blur score " + safeText(image.blur_score) + " · brightness " + safeText(image.brightness)),
+      make("span", "", image.resolution_width && image.resolution_height ? image.resolution_width + " × " + image.resolution_height : "Resolution not recorded")
+    );
+    append(figure, thumb, caption);
+    gallery.appendChild(figure);
+    loadEvidenceImage(issue.id, image, img, thumb, loading);
+  });
+  append(panel, gallery);
+  return panel;
+}
+
+async function loadEvidenceImage(issueId, image, img, thumb, loading) {
+  try {
+    const response = await fetch(API_PREFIX + "/issues/" + encodeURIComponent(issueId) +
+      "/images/" + encodeURIComponent(image.id) + "/content", { headers: authHeaders() });
+    if (!response.ok) throw new Error("Evidence image unavailable.");
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    state.evidenceUrls.push(url);
+    // Attach the handlers before assigning src: a cached blob URL can finish
+    // loading before a listener added afterwards would ever observe the event.
+    img.addEventListener("load", function () {
+      thumb.replaceChildren(img);
+    }, { once: true });
+    img.addEventListener("error", function () {
+      thumb.replaceChildren(make("span", "loading", "Evidence image could not be displayed."));
+    }, { once: true });
+    img.src = url;
+    if (img.complete && img.naturalWidth > 0) {
+      thumb.replaceChildren(img);
+    }
+  } catch (error) {
+    if (loading && loading.parentNode === thumb) {
+      loading.textContent = "Evidence image unavailable.";
+    }
+  }
+}
+
+function historyPanel(history) {
+  const panel = make("section", "panel");
+  append(panel, make("h2", "", "Status history"));
+  if (!history || !history.length) {
+    append(panel, emptyState("No status updates recorded", "Status changes made by municipal staff will appear here with their remarks."));
+    return panel;
+  }
+  const timeline = make("div", "timeline");
+  history.forEach(function (entry) {
+    const item = make("div", "timeline-item");
+    append(item, make("span", "timeline-dot"));
+    const body = make("div", "timeline-body");
+    const top = make("div", "timeline-top");
+    append(top, statusChip(entry.new_status));
+    if (entry.old_status) append(top, make("span", "small muted", "from " + statusLabel(entry.old_status)));
+    append(body, top);
+    append(body, make("div", "timeline-comment", safeText(entry.comment, "No remark recorded.")));
+    append(body, make("div", "timeline-meta", formatDate(entry.created_at) +
+      " · Recorded by municipal officer"));
+    append(item, body);
+    timeline.appendChild(item);
+  });
+  append(panel, timeline);
+  return panel;
+}
+
+function actionPanel(issue, permissions) {
+  const panel = make("section", "panel action-panel");
+  append(panel, make("h2", "", "Resolution workflow"));
+  if (!permissions || !permissions.can_update) {
+    if (permissions && permissions.assigned_to_another_officer) {
+      append(panel, make("div", "notice", "This complaint is assigned to another officer. You can read its details but cannot update its status."));
+    } else if (!issue.assigned_officer_id) {
+      append(panel, make("div", "notice", "Claim this complaint before updating its status. Only the assigned officer can record a status change."));
+    } else if (["resolved", "rejected", "duplicate"].includes(String(issue.status))) {
+      append(panel, make("div", "notice info", "This complaint is closed. Its audit history remains available for review."));
+    } else {
+      append(panel, make("div", "notice", "Status updates are unavailable for this complaint."));
+    }
+    return panel;
+  }
+  append(panel, make("p", "note", "Every status change requires a non-empty remark. The backend records your authenticated officer identity in the audit trail."));
+  const form = make("form", "status-form");
+  const row = make("div", "row");
+  const statusField = make("div", "field");
+  const select = document.createElement("select");
+  select.id = "status-select";
+  select.required = true;
+  const allowed = ALLOWED_TRANSITIONS[String(issue.status)] || [];
+  if (!allowed.length) {
+    append(panel, make("div", "notice info", "No further status transition is permitted from " + statusLabel(issue.status) + "."));
+    return panel;
+  }
+  allowed.forEach(function (value) {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = statusLabel(value);
+    select.appendChild(option);
+  });
+  append(statusField, make("label", "", "New status"), select);
+  const commentField = make("div", "field");
+  const textarea = document.createElement("textarea");
+  textarea.id = "status-comment";
+  textarea.required = true;
+  textarea.placeholder = "Describe the action taken. This remark is stored in the audit trail.";
+  append(commentField, make("label", "", "Mandatory remark"), textarea);
+  append(row, statusField, commentField);
+  const actions = make("div", "form-actions");
+  const submit = make("button", "btn primary", "Record status update");
+  submit.type = "submit";
+  append(actions, submit);
+  append(form, row, actions);
+  const message = make("div", "form-message info hidden");
+  message.setAttribute("role", "status");
+  append(form, message);
+  form.addEventListener("submit", async function (event) {
+    event.preventDefault();
+    const comment = textarea.value.trim();
+    if (!comment) {
+      setMessage(message, "A non-empty remark is required for every status update.", "error");
+      textarea.focus();
+      return;
+    }
+    submit.disabled = true;
+    setMessage(message, "Recording status update.", "info");
+    try {
+      await api("/issues/" + encodeURIComponent(issue.id) + "/status", {
+        method: "PATCH",
+        body: JSON.stringify({ new_status: select.value, comment: comment })
+      });
+      setGlobalMessage("Status updated successfully. The audit trail records your remark.", "success");
+      await loadOverview();
+      await openIssue(issue.id);
+    } catch (error) {
+      setMessage(message, error.message, "error");
+      submit.disabled = false;
+    }
+  });
+  append(panel, form);
+  return panel;
+}
+
+function renderDetail() {
+  clearDetailMap();
+  clearEvidenceUrls();
+  const container = byId("detail-content");
+  clear(container);
+  if (!state.detail) {
+    container.appendChild(emptyState("Complaint unavailable", "Open a complaint from the queue to view its details."));
+    return;
+  }
+  const issue = state.detail.issue;
+  const department = state.detail.department;
+  const permissions = state.detail.permissions;
+  const stack = make("div", "detail-stack");
+  append(stack, detailHeader(issue, permissions), actionPanel(issue, permissions), classificationPanel(issue), routingPanel(issue), historyPanel(state.detail.history));
+  const side = make("div", "detail-stack");
+  const departmentPanel = make("section", "panel");
+  append(departmentPanel, make("h2", "", "Department"));
+  const grid = make("div", "kv-grid");
+  append(grid,
+    kvRow("Department", department.name),
+    kvRow("Short name", department.short_name || "Not recorded"),
+    kvRow("City", department.city || "Not recorded"),
+    kvRow("Handled category", department.handles_category || "Not recorded"),
+    kvRow("Routing mode", department.routing_mode || "Not recorded"),
+    kvRow("Assignment", permissions.is_assigned_to_me ? "Assigned to you" : (permissions.assigned_to_another_officer ? "Assigned to another officer" : "Unclaimed"))
+  );
+  append(departmentPanel, grid);
+  append(side, departmentPanel, evidencePanel(issue, state.detail.images));
+  const gridWrap = make("div", "detail-grid");
+  append(gridWrap, stack, side);
+  container.appendChild(gridWrap);
+  initDetailMap(issue);
+}
+
+function renderProfile() {
+  const container = byId("profile-content");
+  clear(container);
+  if (!state.user) return;
+  const department = state.overview ? state.overview.department : null;
+  const account = make("section", "panel profile-card");
+  const avatar = make("div", "profile-avatar", initials(state.user.name));
+  append(account, avatar, make("h2", "", safeText(state.user.name, "Officer")), make("p", "email", safeText(state.user.email)));
+  const accountGrid = make("div", "kv-grid");
+  append(accountGrid,
+    kvRow("Role", state.user.role || "officer"),
+    kvRow("Preferred language", state.user.preferred_language || "Not recorded"),
+    kvRow("Account created", formatDate(state.user.created_at))
+  );
+  append(account, accountGrid);
+  const sessionNote = make("div", "notice info", "Your bearer token is held in sessionStorage for this tab only. Signing out removes it and clears the portal state.");
+  append(account, sessionNote);
+  const signOut = make("button", "btn danger", "Log out securely");
+  signOut.type = "button";
+  signOut.addEventListener("click", function () { logout(true); });
+  append(account, signOut);
+
+  const deptCard = make("section", "panel profile-card");
+  append(deptCard, make("h2", "", "Department identity"));
+  if (department) {
+    const deptGrid = make("div", "kv-grid");
+    append(deptGrid,
+      kvRow("Department", department.name),
+      kvRow("Short name", department.short_name || "Not recorded"),
+      kvRow("City", department.city || "Not recorded"),
+      kvRow("Handled category", department.handles_category || "Not recorded"),
+      kvRow("Routing mode", department.routing_mode || "Not recorded")
+    );
+    append(deptCard, deptGrid);
+  } else {
+    append(deptCard, make("p", "muted", "Department details are unavailable."));
+  }
+  const scopeNote = make("p", "muted", "Operational views are enforced by the backend. The portal does not send a department id and cannot widen its own queue scope.");
+  append(deptCard, scopeNote);
+  append(container, account, deptCard);
+}
+
+function bindEvents() {
+  byId("login-form").addEventListener("submit", async function (event) {
+    event.preventDefault();
+    const email = byId("login-email").value.trim();
+    const password = byId("login-password").value;
+    const button = byId("login-submit");
+    setLoginMessage("", "info");
+    button.disabled = true;
+    try {
+      await login(email, password);
+      setLoginMessage("", "info");
+    } catch (error) {
+      setLoginMessage(error.message, "error");
+      byId("login-password").value = "";
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  document.querySelectorAll(".nav-btn").forEach(function (button) {
+    button.addEventListener("click", function () {
+      navigate(button.getAttribute("data-view"), button.getAttribute("data-scope") || null);
+    });
+  });
+
+  byId("profile-button").addEventListener("click", function () { navigate("profile"); });
+  byId("logout-button").addEventListener("click", function () { logout(true); });
+  byId("menu-toggle").addEventListener("click", function () {
+    byId("sidebar").classList.toggle("open");
+  });
+  byId("dashboard-open-queue").addEventListener("click", function () { navigate("queue", "queue"); });
+  byId("refresh-queue").addEventListener("click", function () { loadIssues(); });
+  byId("back-to-list").addEventListener("click", function () { navigate("queue", state.scope); });
+  ["filter-status", "filter-category", "filter-priority"].forEach(function (id) {
+    byId(id).addEventListener("change", function () { loadIssues(); });
+  });
+  byId("search-input").addEventListener("input", function () {
+    window.clearTimeout(state.searchTimer);
+    state.searchTimer = window.setTimeout(function () { loadIssues(); }, 280);
+  });
+  byId("clear-filters").addEventListener("click", function () {
+    byId("search-input").value = "";
+    byId("filter-status").value = "";
+    byId("filter-category").value = "";
+    byId("filter-priority").value = "";
+    loadIssues();
+  });
+}
+
+async function init() {
+  bindEvents();
+  let saved = null;
+  try { saved = window.sessionStorage.getItem(TOKEN_KEY); } catch (error) { saved = null; }
+  if (!saved) {
+    showAuth();
+    return;
+  }
+  state.token = saved;
+  try {
+    await loadSession();
+  } catch (error) {
+    logout(false);
+    setLoginMessage(error.message || "Sign-in required.", "error");
+  }
+}
+
+document.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>

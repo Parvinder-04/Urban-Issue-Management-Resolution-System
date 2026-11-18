@@ -1,0 +1,37 @@
+# UIMRS backend dependencies.
+#
+# These pins describe the environment that the full test suite and the running
+# application are verified against (Python 3.13 on Windows 11). Keep them in
+# sync with the working virtual environment; the Windows launchers run
+# ``pip install -r`` on every start, so an unsatisfiable pin would abort the
+# whole install and a stale pin would silently downgrade a working stack.
+#
+# Note: pandas 2.2.x has no CPython 3.13 wheel and its source build fails in
+# this environment, so the verified pandas 3.x release is used instead.
+
+# Web framework
+fastapi==0.141.1
+uvicorn[standard]==0.53.0
+
+# Database
+sqlalchemy==2.0.54
+alembic==1.20.0
+
+# Auth
+python-jose[cryptography]==3.5.0
+bcrypt==5.0.0
+python-multipart==0.0.32
+
+# AI / ML
+scikit-learn==1.9.1
+joblib==1.6.0
+numpy==2.5.3
+pandas==3.0.6
+opencv-python==5.0.0.93
+
+# Validation
+pydantic[email]==2.13.5
+
+# Dev / testing
+pytest==8.3.3
+httpx==0.28.1

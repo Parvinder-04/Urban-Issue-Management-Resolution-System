@@ -1,0 +1,2221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="UIMRS citizen portal — report, track and review your civic complaints.">
+<title>UIMRS Citizen Portal</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<style>
+:root{
+  --navy:#0b1f33;
+  --navy-2:#102c47;
+  --ink:#13283d;
+  --muted:#5b7186;
+  --teal:#0f766e;
+  --teal-strong:#0d9488;
+  --teal-soft:#ccfbf1;
+  --sand:#f3f6f9;
+  --card:#ffffff;
+  --line:#dfe7ef;
+  --line-strong:#c8d5e2;
+  --amber:#b45309;
+  --amber-soft:#fef3c7;
+  --red:#b91c1c;
+  --red-soft:#fee2e2;
+  --green:#166534;
+  --green-soft:#dcfce7;
+  --blue:#1d4ed8;
+  --blue-soft:#dbeafe;
+  --violet:#6d28d9;
+  --violet-soft:#ede9fe;
+  --gray-soft:#e8edf3;
+  --shadow:0 18px 40px rgba(11,31,51,.09);
+  --shadow-soft:0 6px 18px rgba(11,31,51,.06);
+  --radius:18px;
+  --radius-sm:12px;
+}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{
+  margin:0;
+  font-family:"Segoe UI",system-ui,-apple-system,BlinkMacSystemFont,Arial,sans-serif;
+  background:var(--sand);
+  color:var(--ink);
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{margin:0;line-height:1.2;letter-spacing:-.01em}
+p{margin:0}
+a{color:var(--teal)}
+button{font:inherit}
+img{max-width:100%;display:block}
+.hidden{display:none!important}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.muted{color:var(--muted)}
+.small{font-size:12px}
+
+/* ---------- Buttons ---------- */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  border:1px solid var(--line-strong);background:#fff;color:var(--ink);
+  padding:11px 17px;border-radius:999px;font-weight:650;font-size:14px;
+  cursor:pointer;transition:transform .12s ease,box-shadow .12s ease,background .12s ease;
+  text-decoration:none;
+}
+.btn:hover{box-shadow:var(--shadow-soft);transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn:focus-visible{outline:3px solid rgba(13,148,136,.35);outline-offset:2px}
+.btn.primary{background:linear-gradient(135deg,var(--teal),var(--teal-strong));border-color:transparent;color:#fff}
+.btn.dark{background:var(--navy);border-color:transparent;color:#fff}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--teal)}
+.btn.danger{background:var(--red-soft);border-color:#fecaca;color:var(--red)}
+.btn.small{padding:8px 13px;font-size:12.5px}
+.btn:disabled{opacity:.55;cursor:not-allowed;transform:none;box-shadow:none}
+.icon-btn{
+  border:1px solid var(--line);background:#fff;border-radius:12px;
+  width:42px;height:42px;display:inline-flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:18px;color:var(--ink)
+}
+.icon-btn:focus-visible{outline:3px solid rgba(13,148,136,.35);outline-offset:2px}
+
+/* ---------- Auth ---------- */
+.auth-shell{
+  min-height:100vh;display:grid;grid-template-columns:1.05fr .95fr;
+  background:radial-gradient(1200px 600px at 0% 0%,#123a5a 0%,var(--navy) 48%,#071727 100%);
+}
+.auth-hero{
+  color:#e6f1f7;padding:clamp(32px,6vw,76px);display:flex;flex-direction:column;
+  justify-content:space-between;gap:40px;position:relative;overflow:hidden;
+}
+.auth-hero::after{
+  content:"";position:absolute;right:-140px;bottom:-180px;width:460px;height:460px;
+  border-radius:50%;border:1px solid rgba(45,212,191,.25);
+  box-shadow:0 0 0 60px rgba(45,212,191,.05),0 0 0 120px rgba(45,212,191,.03);
+}
+.brand-mark{display:flex;align-items:center;gap:12px;font-weight:800;font-size:18px;letter-spacing:.02em}
+.brand-logo{
+  width:42px;height:42px;border-radius:13px;display:grid;place-items:center;
+  background:linear-gradient(135deg,#14b8a6,#0ea5e9);color:#032b33;font-weight:900;
+  box-shadow:0 10px 24px rgba(20,184,166,.35)
+}
+.brand-mark small{display:block;font-weight:500;font-size:11.5px;color:#9fc3d8;letter-spacing:.08em;text-transform:uppercase;margin-top:2px}
+.hero-copy{max-width:560px;position:relative;z-index:1}
+.eyebrow{
+  display:inline-flex;align-items:center;gap:8px;font-size:11.5px;font-weight:750;
+  letter-spacing:.14em;text-transform:uppercase;color:#7dd3c7;
+  border:1px solid rgba(125,211,199,.35);padding:7px 12px;border-radius:999px;margin-bottom:22px
+}
+.hero-copy h1{font-size:clamp(34px,4.4vw,56px);line-height:1.04;letter-spacing:-.035em}
+.hero-copy h1 span{color:#5eead4}
+.hero-copy p{margin-top:20px;font-size:16px;color:#b6d0e0;max-width:500px}
+.hero-points{display:grid;gap:13px;margin-top:32px}
+.hero-point{display:flex;gap:12px;align-items:flex-start;font-size:14px;color:#d7e8f2}
+.hero-point b{display:block;font-size:13.5px;color:#fff}
+.hero-point span{color:#9fc3d8;font-size:12.5px}
+.point-icon{
+  width:30px;height:30px;border-radius:9px;background:rgba(20,184,166,.15);
+  border:1px solid rgba(94,234,212,.3);display:grid;place-items:center;color:#5eead4;
+  font-size:14px;flex-shrink:0;margin-top:1px
+}
+.auth-foot{font-size:12px;color:#8fb1c7;display:flex;gap:18px;flex-wrap:wrap;position:relative;z-index:1}
+.auth-foot a{color:#b6d0e0;text-decoration:none;border-bottom:1px dashed rgba(182,208,224,.4)}
+.auth-panel{
+  display:flex;align-items:center;justify-content:center;padding:clamp(22px,4vw,56px);
+  background:linear-gradient(180deg,#f7fafc,#eef4f8)
+}
+.auth-card{
+  width:100%;max-width:460px;background:var(--card);border:1px solid var(--line);
+  border-radius:26px;padding:clamp(24px,3vw,38px);box-shadow:var(--shadow)
+}
+.auth-card h2{font-size:26px;letter-spacing:-.03em}
+.auth-card .lede{color:var(--muted);font-size:13.5px;margin-top:8px}
+.auth-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#eef3f7;padding:5px;border-radius:14px;margin:24px 0}
+.auth-tab{
+  border:0;background:transparent;padding:10px;border-radius:10px;font-weight:700;
+  color:var(--muted);cursor:pointer;font-size:13.5px
+}
+.auth-tab.active{background:#fff;color:var(--ink);box-shadow:0 2px 8px rgba(11,31,51,.08)}
+.auth-form{display:grid;gap:14px}
+.auth-note{font-size:12px;color:var(--muted);text-align:center;margin-top:16px;line-height:1.55}
+.auth-notice{
+  margin-top:14px;padding:11px 13px;border-radius:11px;font-size:12.5px;
+  background:var(--blue-soft);color:#1e3a8a;border:1px solid #bfdbfe
+}
+
+/* ---------- Forms ---------- */
+.field{display:grid;gap:6px}
+.field label,.field-label{font-size:12.5px;font-weight:700;color:#334b61;letter-spacing:.01em}
+.field .hint{font-size:11.5px;color:var(--muted)}
+input[type=text],input[type=email],input[type=tel],input[type=password],input[type=number],select,textarea{
+  width:100%;border:1px solid var(--line-strong);border-radius:11px;padding:11px 13px;
+  background:#fbfdff;color:var(--ink);font:inherit;font-size:14px;transition:border-color .12s,box-shadow .12s
+}
+input:focus,select:focus,textarea:focus{
+  outline:0;border-color:var(--teal-strong);box-shadow:0 0 0 3px rgba(13,148,136,.14);background:#fff
+}
+textarea{min-height:120px;resize:vertical}
+input[type=file]{
+  width:100%;border:1px dashed var(--line-strong);border-radius:12px;padding:14px;
+  background:#fbfdff;font-size:13px;color:var(--muted);cursor:pointer
+}
+input[type=file]:focus{outline:3px solid rgba(13,148,136,.25);outline-offset:2px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.form-grid .span-2{grid-column:1/-1}
+.form-message{
+  padding:11px 13px;border-radius:11px;font-size:12.5px;line-height:1.45;
+  background:var(--blue-soft);color:#1e3a8a;border:1px solid #bfdbfe
+}
+.form-message.error{background:var(--red-soft);color:#7f1d1d;border-color:#fecaca}
+.form-message.success{background:var(--green-soft);color:#14532d;border-color:#bbf7d0}
+.form-message.warning{background:var(--amber-soft);color:#78350f;border-color:#fde68a}
+.form-message.info{background:var(--blue-soft);color:#1e3a8a;border-color:#bfdbfe}
+.form-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:4px}
+.checkline{display:flex;gap:9px;align-items:flex-start;font-size:12.5px;color:#3d556b}
+.checkline input{margin-top:3px;accent-color:var(--teal)}
+
+/* ---------- App shell ---------- */
+.app{min-height:100vh;display:flex;background:var(--sand)}
+.sidebar{
+  width:264px;flex-shrink:0;background:linear-gradient(180deg,var(--navy),#0a1b2d);
+  color:#dbeafe;padding:24px 16px;display:flex;flex-direction:column;gap:22px;
+  position:sticky;top:0;height:100vh
+}
+.sidebar .brand-mark{padding:2px 8px;color:#fff}
+.sidebar .brand-mark small{color:#8fb1c7}
+.nav{display:grid;gap:6px}
+.nav-btn{
+  display:flex;align-items:center;gap:11px;width:100%;border:0;background:transparent;
+  color:#b9cee0;text-align:left;padding:11px 12px;border-radius:11px;cursor:pointer;
+  font-weight:600;font-size:13.5px;transition:background .12s,color .12s
+}
+.nav-btn:hover{background:rgba(255,255,255,.06);color:#fff}
+.nav-btn.active{background:rgba(20,184,166,.16);color:#fff;box-shadow:inset 3px 0 0 #2dd4bf}
+.nav-btn:focus-visible{outline:2px solid #5eead4;outline-offset:2px}
+.nav-icon{width:22px;text-align:center;font-size:15px;opacity:.95}
+.sidebar-spacer{flex:1}
+.side-user{
+  border-top:1px solid rgba(255,255,255,.1);padding-top:16px;display:grid;gap:10px
+}
+.side-user .who{display:flex;align-items:center;gap:10px;min-width:0}
+.avatar{
+  width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,#14b8a6,#0ea5e9);
+  display:grid;place-items:center;color:#04242a;font-weight:800;font-size:13px;flex-shrink:0
+}
+.who-name{font-size:13px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.who-role{font-size:11px;color:#8fb1c7;text-transform:capitalize}
+.side-user .btn{width:100%;justify-content:flex-start;background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.14);color:#dbeafe}
+.side-note{font-size:10.5px;color:#7694aa;line-height:1.5;padding:0 4px}
+
+.app-main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{
+  display:flex;align-items:center;gap:14px;padding:18px clamp(16px,3vw,34px);
+  background:rgba(243,246,249,.88);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);position:sticky;top:0;z-index:500
+}
+.topbar .titles{min-width:0}
+.topbar h1{font-size:21px;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar .sub{font-size:12px;color:var(--muted);margin-top:2px}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.role-badge{
+  padding:7px 11px;border-radius:999px;background:#e0f2f1;color:#115e59;
+  font-size:11px;font-weight:800;text-transform:capitalize;letter-spacing:.03em;white-space:nowrap
+}
+.menu-toggle{display:none}
+.content{padding:clamp(16px,3vw,34px);max-width:1240px;width:100%;margin:0 auto;flex:1}
+.page{display:none;animation:fade .18s ease}
+.page.active{display:block}
+@keyframes fade{from{opacity:.4;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* ---------- Cards / layout ---------- */
+.card{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:clamp(18px,2.4vw,26px);box-shadow:var(--shadow-soft)
+}
+.card h2{font-size:17px;letter-spacing:-.02em}
+.card .card-sub{font-size:12.5px;color:var(--muted);margin-top:5px}
+.section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:18px;flex-wrap:wrap}
+.section-head h2{font-size:20px;letter-spacing:-.025em}
+.section-head p{font-size:12.5px;color:var(--muted);margin-top:4px}
+.grid-2{display:grid;grid-template-columns:1.4fr .9fr;gap:18px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.stack{display:grid;gap:18px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.stat{
+  background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px;
+  box-shadow:var(--shadow-soft);position:relative;overflow:hidden
+}
+.stat::after{content:"";position:absolute;right:-24px;top:-24px;width:78px;height:78px;border-radius:50%;background:rgba(13,148,136,.07)}
+.stat .stat-label{font-size:11.5px;font-weight:750;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.stat .stat-value{font-size:32px;font-weight:800;letter-spacing:-.04em;margin-top:8px;line-height:1}
+.stat .stat-hint{font-size:11px;color:var(--muted);margin-top:7px}
+.welcome{
+  background:linear-gradient(120deg,#0b1f33 0%,#123a5a 60%,#0f5f63 100%);
+  color:#e6f1f7;border:0;position:relative;overflow:hidden
+}
+.welcome::after{
+  content:"";position:absolute;right:-90px;top:-110px;width:300px;height:300px;border-radius:50%;
+  border:1px solid rgba(94,234,212,.25);box-shadow:0 0 0 40px rgba(94,234,212,.05)
+}
+.welcome h2{font-size:clamp(22px,3vw,30px);letter-spacing:-.03em;color:#fff}
+.welcome p{color:#b6d0e0;font-size:13.5px;margin-top:9px;max-width:640px}
+.welcome .welcome-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+.welcome .btn{position:relative;z-index:1}
+.welcome .btn.ghost{color:#9ff0e4;border:1px solid rgba(159,240,228,.35)}
+.quick-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.quick{
+  text-align:left;border:1px solid var(--line);background:#fff;border-radius:14px;padding:16px;
+  cursor:pointer;transition:transform .12s,box-shadow .12s;display:grid;gap:6px
+}
+.quick:hover{transform:translateY(-2px);box-shadow:var(--shadow-soft)}
+.quick:focus-visible{outline:3px solid rgba(13,148,136,.3);outline-offset:2px}
+.quick b{font-size:13.5px}
+.quick span{font-size:11.5px;color:var(--muted)}
+.quick .q-icon{font-size:19px}
+
+/* ---------- Chips ---------- */
+.chip{
+  display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border-radius:999px;
+  font-size:10.5px;font-weight:800;letter-spacing:.02em;white-space:nowrap;
+  background:var(--gray-soft);color:#334155
+}
+.chip.status-reported{background:var(--blue-soft);color:#1e40af}
+.chip.status-acknowledged{background:var(--amber-soft);color:#92400e}
+.chip.status-in_progress{background:var(--violet-soft);color:#5b21b6}
+.chip.status-resolved{background:var(--green-soft);color:#166534}
+.chip.status-rejected{background:var(--red-soft);color:#991b1b}
+.chip.status-duplicate{background:#e2e8f0;color:#475569}
+.chip.priority-critical{background:#fecaca;color:#7f1d1d}
+.chip.priority-high{background:#ffedd5;color:#9a3412}
+.chip.priority-medium{background:#fef9c3;color:#854d0e}
+.chip.priority-low{background:#dcfce7;color:#166534}
+.chip.review-yes{background:#fef3c7;color:#92400e}
+.chip.review-no{background:#dcfce7;color:#166534}
+.chip.review-unknown{background:#e2e8f0;color:#475569}
+.chip.live{background:#ccfbf1;color:#115e59}
+.chip.soft{background:#eef4f8;color:#334b61}
+
+/* ---------- Complaints list ---------- */
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
+.toolbar .field{min-width:150px}
+.toolbar .grow{flex:1}
+.complaint-list{display:grid;gap:12px;margin-top:18px}
+.complaint-card{
+  border:1px solid var(--line);background:#fff;border-radius:15px;padding:17px 18px;
+  cursor:pointer;transition:border-color .12s,transform .12s,box-shadow .12s;
+  display:grid;gap:9px
+}
+.complaint-card:hover{border-color:#9fd6d0;transform:translateY(-1px);box-shadow:var(--shadow-soft)}
+.complaint-card:focus-visible{outline:3px solid rgba(13,148,136,.3);outline-offset:2px}
+.complaint-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ticket{
+  font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:11.5px;font-weight:800;
+  color:var(--teal);background:#ecfdf9;border:1px solid #b7efe5;padding:3px 8px;border-radius:7px
+}
+.complaint-card h3{font-size:15px;letter-spacing:-.01em}
+.complaint-meta{font-size:12px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.dot{width:3px;height:3px;border-radius:50%;background:#9fb0c0;display:inline-block}
+.complaint-foot{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:space-between}
+.complaint-foot .when{font-size:11.5px;color:var(--muted)}
+.pager{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:18px;flex-wrap:wrap}
+.pager .info{font-size:12px;color:var(--muted)}
+.empty{
+  border:1px dashed var(--line-strong);border-radius:16px;padding:38px 22px;text-align:center;
+  background:linear-gradient(180deg,#fbfdff,#f5f9fc)
+}
+.empty .empty-icon{font-size:30px;margin-bottom:10px}
+.empty h3{font-size:16px}
+.empty p{font-size:12.5px;color:var(--muted);max-width:440px;margin:7px auto 0}
+
+/* ---------- Report ---------- */
+.report-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:18px;align-items:start}
+.map-wrap{display:grid;gap:8px}
+.map{height:340px;border-radius:14px;border:1px solid var(--line-strong);overflow:hidden;background:#e6eef5}
+.map-small{height:220px;border-radius:13px;border:1px solid var(--line-strong);overflow:hidden;background:#e6eef5}
+.map-help{font-size:11.5px;color:var(--muted);display:flex;gap:7px;align-items:flex-start}
+.coord-box{
+  display:grid;grid-template-columns:1fr 1fr;gap:10px;background:#f6fafc;border:1px solid var(--line);
+  border-radius:12px;padding:12px
+}
+.coord-box .k{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:750}
+.coord-box .v{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12.5px;font-weight:700;margin-top:3px}
+.map-actions{display:flex;gap:8px;flex-wrap:wrap}
+.callout{
+  border:1px solid #bae6fd;background:#f0f9ff;color:#0c4a6e;border-radius:12px;
+  padding:12px 14px;font-size:12px;line-height:1.5
+}
+.callout.warn{border-color:#fde68a;background:#fffbeb;color:#78350f}
+.callout.info{border-color:#c7d2fe;background:#eef2ff;color:#3730a3}
+
+/* ---------- Confirmation ---------- */
+.confirm-hero{
+  background:linear-gradient(120deg,#0b1f33,#0f5f63);color:#e6f1f7;border-radius:18px;
+  padding:clamp(20px,3vw,30px);position:relative;overflow:hidden
+}
+.confirm-hero .ok{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#5eead4}
+.confirm-hero h2{font-size:clamp(23px,3vw,32px);color:#fff;margin-top:8px;letter-spacing:-.03em}
+.confirm-ticket{
+  display:inline-block;margin-top:14px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;
+  font-size:clamp(16px,2.4vw,21px);font-weight:800;background:rgba(255,255,255,.1);
+  border:1px solid rgba(94,234,212,.4);padding:9px 14px;border-radius:10px;color:#fff
+}
+.detail-grid{display:grid;grid-template-columns:1.3fr .9fr;gap:18px;align-items:start}
+.kv{display:grid;gap:0}
+.kv-row{display:grid;grid-template-columns:minmax(130px,.8fr) 1.2fr;gap:14px;padding:10px 0;border-bottom:1px solid #edf2f6;font-size:12.5px}
+.kv-row:last-child{border-bottom:0}
+.kv-row .k{color:var(--muted);font-weight:650}
+.kv-row .v{font-weight:600;overflow-wrap:anywhere}
+.reason-list{margin:0;padding-left:18px;display:grid;gap:7px;font-size:12.5px;color:#334b61}
+.alt-list{display:flex;gap:7px;flex-wrap:wrap;margin-top:4px}
+.disclaimer{
+  border-left:3px solid var(--teal-strong);background:#f0fdfa;border-radius:0 10px 10px 0;
+  padding:11px 13px;font-size:11.5px;color:#115e59;line-height:1.5
+}
+.disclaimer.amber{border-color:#d97706;background:#fffbeb;color:#78350f}
+
+/* ---------- Timeline ---------- */
+.timeline{list-style:none;margin:0;padding:0;display:grid;gap:0}
+.timeline li{display:grid;grid-template-columns:26px 1fr;gap:12px;position:relative;padding-bottom:20px}
+.timeline li:last-child{padding-bottom:0}
+.timeline li::before{
+  content:"";position:absolute;left:12px;top:24px;bottom:-2px;width:2px;background:#e2e8f0
+}
+.timeline li:last-child::before{display:none}
+.timeline-dot{
+  width:26px;height:26px;border-radius:50%;background:#e0f2f1;border:2px solid #99f6e4;
+  display:grid;place-items:center;font-size:10px;color:#115e59;z-index:1
+}
+.timeline-body{padding-top:2px}
+.timeline-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.timeline-head time{font-size:11px;color:var(--muted)}
+.timeline-body p{font-size:12.5px;color:#3d556b;margin-top:5px;overflow-wrap:anywhere}
+
+/* ---------- Evidence ---------- */
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.evidence-card{margin:0;border:1px solid var(--line);border-radius:13px;overflow:hidden;background:#fff}
+.evidence-card img{width:100%;height:170px;object-fit:cover;background:#eef4f8}
+.evidence-card figcaption{padding:9px 11px;font-size:11px;color:var(--muted);border-top:1px solid var(--line)}
+.evidence-card figcaption b{display:block;color:#334b61;font-size:11.5px;margin-bottom:2px}
+
+/* ---------- Profile ---------- */
+.profile-head{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.profile-head .avatar{width:64px;height:64px;border-radius:18px;font-size:20px}
+.profile-head h2{font-size:22px}
+.profile-head p{font-size:12.5px;color:var(--muted);margin-top:3px}
+.profile-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:18px;align-items:start}
+
+/* ---------- Chat ---------- */
+.chat-toggle{
+  position:fixed;right:22px;bottom:22px;z-index:900;border:0;border-radius:999px;
+  background:linear-gradient(135deg,var(--teal),var(--teal-strong));color:#fff;
+  padding:13px 18px;font-weight:750;font-size:13.5px;cursor:pointer;
+  box-shadow:0 14px 32px rgba(15,118,110,.35);display:flex;align-items:center;gap:8px
+}
+.chat-toggle:focus-visible{outline:3px solid rgba(13,148,136,.4);outline-offset:3px}
+.chat-panel{
+  position:fixed;right:22px;bottom:84px;width:min(380px,calc(100vw - 32px));height:min(560px,calc(100vh - 120px));
+  background:#fff;border:1px solid var(--line);border-radius:20px;box-shadow:0 26px 70px rgba(11,31,51,.22);
+  z-index:901;display:flex;flex-direction:column;overflow:hidden
+}
+.chat-head{padding:15px 17px;background:var(--navy);color:#fff;display:flex;align-items:center;gap:10px}
+.chat-head .chat-dot{width:9px;height:9px;border-radius:50%;background:#2dd4bf;box-shadow:0 0 0 4px rgba(45,212,191,.18)}
+.chat-head b{font-size:13.5px}
+.chat-head p{font-size:10.5px;color:#9fc3d8;margin-top:1px}
+.chat-close{margin-left:auto;background:transparent;border:0;color:#9fc3d8;font-size:18px;cursor:pointer;padding:4px}
+.chat-capability{
+  font-size:10.5px;line-height:1.45;color:#78350f;background:#fffbeb;border-bottom:1px solid #fde68a;
+  padding:9px 14px
+}
+.chat-log{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:9px;background:#f8fbfd}
+.chat-msg{max-width:88%;padding:9px 12px;border-radius:13px;font-size:12.5px;line-height:1.45;overflow-wrap:anywhere}
+.chat-msg.bot{background:#fff;border:1px solid var(--line);border-bottom-left-radius:4px;align-self:flex-start;color:#2b4258}
+.chat-msg.user{background:var(--teal);color:#fff;border-bottom-right-radius:4px;align-self:flex-end}
+.chat-msg.note{background:#fef3c7;color:#78350f;font-size:10.5px;align-self:flex-start;border:1px solid #fde68a}
+.chat-msg.typing{color:var(--muted);font-style:italic}
+.chat-form{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line);background:#fff}
+.chat-form input{flex:1;border-radius:999px}
+.chat-form button{border-radius:999px;padding:10px 16px}
+
+/* ---------- Toast ---------- */
+.toast{
+  position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);
+  background:var(--navy);color:#fff;padding:12px 18px;border-radius:12px;font-size:13px;
+  box-shadow:0 18px 40px rgba(11,31,51,.25);z-index:1200;opacity:0;pointer-events:none;
+  transition:opacity .18s,transform .18s;max-width:min(520px,calc(100vw - 32px));text-align:center
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.error{background:#7f1d1d}
+.toast.success{background:#14532d}
+
+/* ---------- Responsive ---------- */
+@media(max-width:1080px){
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .grid-2,.report-grid,.detail-grid,.profile-grid{grid-template-columns:1fr}
+  .grid-3{grid-template-columns:1fr 1fr}
+}
+@media(max-width:900px){
+  .auth-shell{grid-template-columns:1fr}
+  .auth-hero{padding:34px 24px 26px;gap:24px}
+  .hero-points{display:none}
+  .auth-foot{display:none}
+  .auth-panel{padding:24px 16px 40px}
+}
+@media(max-width:820px){
+  .sidebar{
+    position:fixed;left:0;top:0;bottom:0;z-index:1000;transform:translateX(-100%);
+    transition:transform .2s ease;height:100vh;box-shadow:0 0 50px rgba(0,0,0,.3)
+  }
+  .app.nav-open .sidebar{transform:translateX(0)}
+  .nav-overlay{
+    position:fixed;inset:0;background:rgba(7,23,39,.45);z-index:999;opacity:0;
+    pointer-events:none;transition:opacity .2s
+  }
+  .app.nav-open .nav-overlay{opacity:1;pointer-events:auto}
+  .menu-toggle{display:inline-flex}
+  .quick-actions,.grid-3{grid-template-columns:1fr}
+  .form-grid{grid-template-columns:1fr}
+  .form-grid .span-2{grid-column:auto}
+  .topbar{padding:14px 16px}
+  .topbar .sub{display:none}
+  .role-badge{display:none}
+  .content{padding:16px}
+  .map{height:290px}
+}
+@media(max-width:560px){
+  .stats{grid-template-columns:1fr 1fr;gap:10px}
+  .stat .stat-value{font-size:26px}
+  .coord-box{grid-template-columns:1fr}
+  .kv-row{grid-template-columns:1fr;gap:3px}
+  .complaint-foot{align-items:flex-start;flex-direction:column}
+  .chat-toggle{right:14px;bottom:14px}
+  .chat-panel{right:8px;bottom:76px;width:calc(100vw - 16px);height:calc(100vh - 100px)}
+  .auth-card{border-radius:20px;padding:22px}
+}
+</style>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+</head>
+<body>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<!-- ==================== AUTH VIEW ==================== -->
+<div id="auth-view" class="auth-shell">
+  <section class="auth-hero" aria-label="About the UIMRS citizen portal">
+    <div class="brand-mark">
+      <span class="brand-logo" aria-hidden="true">U</span>
+      <span>UIMRS<small>Citizen Services</small></span>
+    </div>
+    <div class="hero-copy">
+      <span class="eyebrow">Intelligent urban issue management</span>
+      <h1>Report civic issues.<br><span>Track real progress.</span></h1>
+      <p>Submit a genuine complaint with its exact location and photographic evidence, then follow the municipal response through your own secure account.</p>
+      <div class="hero-points">
+        <div class="hero-point">
+          <span class="point-icon" aria-hidden="true">⌖</span>
+          <div><b>Precise, citizen-selected location</b><span>Choose the exact spot on the map — nothing is guessed.</span></div>
+        </div>
+        <div class="hero-point">
+          <span class="point-icon" aria-hidden="true">◉</span>
+          <div><b>Honest AI-assisted triage</b><span>See the classifier source, review state and priority as an estimate.</span></div>
+        </div>
+        <div class="hero-point">
+          <span class="point-icon" aria-hidden="true">▣</span>
+          <div><b>Private evidence handling</b><span>Photos are served only to authorised users through secure requests.</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="auth-foot">
+      <span>Live citizen submissions only</span>
+      <a href="/">Historical Bengaluru dashboard</a>
+    </div>
+  </section>
+
+  <section class="auth-panel">
+    <div class="auth-card">
+      <h2 id="auth-title">Welcome back</h2>
+      <p class="lede" id="auth-lede">Sign in to report a new issue and track your existing complaints.</p>
+
+      <div class="auth-tabs" role="tablist" aria-label="Account access">
+        <button type="button" id="tab-login" class="auth-tab active" role="tab" aria-selected="true" aria-controls="login-form">Sign in</button>
+        <button type="button" id="tab-register" class="auth-tab" role="tab" aria-selected="false" aria-controls="register-form">Create account</button>
+      </div>
+
+      <div id="auth-notice" class="auth-notice hidden" role="status" aria-live="polite"></div>
+
+      <form id="login-form" class="auth-form" novalidate>
+        <div class="field">
+          <label for="login-email">Email address</label>
+          <input id="login-email" name="email" type="email" autocomplete="email" required placeholder="you@example.com">
+        </div>
+        <div class="field">
+          <label for="login-password">Password</label>
+          <input id="login-password" name="password" type="password" autocomplete="current-password" required placeholder="Your password">
+        </div>
+        <div id="login-error" class="form-message error hidden" role="alert"></div>
+        <button type="submit" id="login-submit" class="btn primary">Sign in securely</button>
+        <p class="auth-note">Your password is verified by the UIMRS backend. It is never stored by this page.</p>
+      </form>
+
+      <form id="register-form" class="auth-form hidden" novalidate>
+        <div class="field">
+          <label for="register-name">Full name</label>
+          <input id="register-name" name="name" type="text" autocomplete="name" required placeholder="Your full name">
+        </div>
+        <div class="field">
+          <label for="register-email">Email address</label>
+          <input id="register-email" name="email" type="email" autocomplete="email" required placeholder="you@example.com">
+        </div>
+        <div class="field">
+          <label for="register-phone">Phone number <span class="muted">(optional)</span></label>
+          <input id="register-phone" name="phone" type="tel" autocomplete="tel" placeholder="+91 98765 43210">
+        </div>
+        <div class="field">
+          <label for="register-password">Password</label>
+          <input id="register-password" name="password" type="password" autocomplete="new-password" required minlength="8" placeholder="At least 8 characters">
+          <span class="hint">Use at least 8 characters. Passwords longer than 72 bytes are not accepted by the backend.</span>
+        </div>
+        <div class="field">
+          <label for="register-confirm">Confirm password</label>
+          <input id="register-confirm" name="confirm" type="password" autocomplete="new-password" required placeholder="Re-enter your password">
+        </div>
+        <div class="field">
+          <label for="register-language">Preferred language</label>
+          <select id="register-language" name="preferred_language">
+            <option value="en">English</option>
+            <option value="hi">Hindi</option>
+          </select>
+        </div>
+        <div id="register-error" class="form-message error hidden" role="alert"></div>
+        <button type="submit" id="register-submit" class="btn primary">Create citizen account</button>
+        <p class="auth-note">Public registration creates a <b>citizen</b> account only. Officer and administrator accounts cannot be self-registered here.</p>
+      </form>
+    </div>
+  </section>
+</div>
+
+<!-- ==================== APP VIEW ==================== -->
+<div id="app-view" class="app hidden">
+  <div id="nav-overlay" class="nav-overlay" aria-hidden="true"></div>
+  <aside class="sidebar" aria-label="Citizen portal navigation">
+    <div class="brand-mark">
+      <span class="brand-logo" aria-hidden="true">U</span>
+      <span>UIMRS<small>Citizen Services</small></span>
+    </div>
+    <nav class="nav" aria-label="Main">
+      <button type="button" class="nav-btn active" data-page="dashboard"><span class="nav-icon" aria-hidden="true">▤</span>Dashboard</button>
+      <button type="button" class="nav-btn" data-page="report" id="nav-report"><span class="nav-icon" aria-hidden="true">＋</span>Report an issue</button>
+      <button type="button" class="nav-btn" data-page="complaints"><span class="nav-icon" aria-hidden="true">☰</span>My complaints</button>
+      <button type="button" class="nav-btn" data-page="profile"><span class="nav-icon" aria-hidden="true">◍</span>Profile</button>
+    </nav>
+    <div class="sidebar-spacer"></div>
+    <div class="side-user">
+      <div class="who">
+        <span class="avatar" id="side-avatar" aria-hidden="true">U</span>
+        <div style="min-width:0">
+          <div class="who-name" id="side-name">Citizen</div>
+          <div class="who-role" id="side-role">citizen</div>
+        </div>
+      </div>
+      <button type="button" class="btn small" id="side-logout">Sign out</button>
+      <p class="side-note">Session token stored in this browser tab only. Signing out clears it immediately.</p>
+    </div>
+  </aside>
+
+  <div class="app-main">
+    <header class="topbar">
+      <button type="button" class="icon-btn menu-toggle" id="menu-toggle" aria-label="Open navigation" aria-expanded="false">☰</button>
+      <div class="titles">
+        <h1 id="page-title">Dashboard</h1>
+        <p class="sub" id="page-subtitle">Your live civic complaints and account overview.</p>
+      </div>
+      <div class="topbar-right">
+        <span class="role-badge" id="topbar-role">citizen</span>
+      </div>
+    </header>
+
+    <main class="content">
+      <!-- Dashboard -->
+      <section id="page-dashboard" class="page active" aria-labelledby="page-title">
+        <div class="stack">
+          <section class="card welcome">
+            <div class="eyebrow" style="border-color:rgba(94,234,212,.35);color:#7dd3c7;margin-bottom:12px">Citizen workspace</div>
+            <h2 id="welcome-title">Welcome to your civic workspace</h2>
+            <p>Report an urban issue, attach evidence and follow its status. This portal shows only your own live complaints and never mixes them with the public historical Bengaluru dataset.</p>
+            <div class="welcome-actions">
+              <button type="button" class="btn primary" data-goto="report">Report an issue</button>
+              <button type="button" class="btn ghost" data-goto="complaints">View my complaints</button>
+            </div>
+          </section>
+
+          <div class="stats" id="dashboard-stats">
+            <div class="stat"><div class="stat-label">Your complaints</div><div class="stat-value" id="stat-total">—</div><div class="stat-hint">Live submissions visible to this account</div></div>
+            <div class="stat"><div class="stat-label">Open</div><div class="stat-value" id="stat-open">—</div><div class="stat-hint">Reported, acknowledged or in progress</div></div>
+            <div class="stat"><div class="stat-label">Resolved</div><div class="stat-value" id="stat-resolved">—</div><div class="stat-hint">Marked resolved by the municipality</div></div>
+            <div class="stat"><div class="stat-label">Needs review</div><div class="stat-value" id="stat-review">—</div><div class="stat-hint">Classifier requested human review</div></div>
+          </div>
+          <p class="small muted" id="dashboard-note"></p>
+
+          <div class="quick-actions">
+            <button type="button" class="quick" data-goto="report"><span class="q-icon" aria-hidden="true">⌖</span><b>Report a new issue</b><span>Select the exact location and attach a photo.</span></button>
+            <button type="button" class="quick" data-goto="complaints"><span class="q-icon" aria-hidden="true">◷</span><b>Track complaints</b><span>Filter by status or category and view history.</span></button>
+            <button type="button" class="quick" id="dashboard-support"><span class="q-icon" aria-hidden="true">◔</span><b>Support assistant</b><span>Ask general questions about civic reporting.</span></button>
+          </div>
+
+          <section class="card">
+            <div class="section-head" style="margin-bottom:14px">
+              <div><h2>Latest complaints</h2><p>Most recent live submissions from your account.</p></div>
+              <button type="button" class="btn small" data-goto="complaints">View all</button>
+            </div>
+            <div id="dashboard-latest" class="complaint-list"></div>
+          </section>
+        </div>
+      </section>
+
+      <!-- Report -->
+      <section id="page-report" class="page" aria-labelledby="page-title">
+        <div class="section-head">
+          <div><h2>Report an urban issue</h2><p>Provide an accurate description, choose the exact location and optionally attach a photograph.</p></div>
+        </div>
+
+        <div id="report-officer-note" class="callout warn hidden">Officer accounts cannot submit citizen complaints. Sign in with a citizen account to use this form.</div>
+
+        <div id="report-form-wrap" class="report-grid">
+          <form id="report-form" class="card stack" novalidate>
+            <div class="form-grid">
+              <div class="field span-2">
+                <label for="report-title">Issue title</label>
+                <input id="report-title" type="text" maxlength="200" minlength="5" required placeholder="e.g. Deep pothole near Sector 29 market">
+                <span class="hint">5–200 characters.</span>
+              </div>
+              <div class="field span-2">
+                <label for="report-description">Detailed description</label>
+                <textarea id="report-description" minlength="10" required placeholder="Describe what is wrong, how long it has been there and any immediate risk."></textarea>
+                <span class="hint">At least 10 characters. Be specific; this text also feeds the city-aware classifier.</span>
+              </div>
+              <div class="field">
+                <label for="report-city">City</label>
+                <select id="report-city">
+                  <option value="gurugram" selected>Gurugram, Haryana, India</option>
+                  <option value="bengaluru">Bengaluru, Karnataka, India</option>
+                </select>
+                <span class="hint">Only these two operating cities are accepted by the backend.</span>
+              </div>
+              <div class="field">
+                <label for="report-address">Address or landmark <span class="muted">(optional)</span></label>
+                <input id="report-address" type="text" maxlength="300" placeholder="e.g. Near the bus stop, Sector 29">
+              </div>
+              <div class="field span-2">
+                <label for="report-file">Photographic evidence <span class="muted">(optional)</span></label>
+                <input id="report-file" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
+                <span class="hint">JPEG, PNG or WebP · maximum 10 MB. The server checks the real file content, not just its name. Quality checks (blur, brightness, resolution) run on upload.</span>
+              </div>
+            </div>
+
+            <div id="report-message" class="form-message info hidden" role="status" aria-live="polite"></div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn primary" id="report-submit">Submit complaint</button>
+              <button type="button" class="btn" id="report-reset">Clear form</button>
+            </div>
+            <p class="small muted">Submitting creates a real complaint in the UIMRS database under your authenticated account. A ticket number is issued by the backend.</p>
+          </form>
+
+          <div class="card stack">
+            <div>
+              <h2>Exact complaint location</h2>
+              <p class="card-sub">Click the map or drag the marker to the precise spot. No location is selected automatically.</p>
+            </div>
+            <div class="map-wrap">
+              <div id="report-map" class="map" role="application" aria-label="Map for selecting the complaint location"></div>
+              <div class="map-actions">
+                <button type="button" class="btn small" id="use-location">Use my current location</button>
+                <button type="button" class="btn small ghost" id="clear-location">Clear location</button>
+              </div>
+              <p class="map-help"><span aria-hidden="true">ℹ</span><span>Browser GPS is requested only after you click “Use my current location”. Otherwise the marker is placed only where you click.</span></p>
+            </div>
+            <div class="coord-box">
+              <div><div class="k">Latitude</div><div class="v" id="coord-lat">Not selected</div></div>
+              <div><div class="k">Longitude</div><div class="v" id="coord-lng">Not selected</div></div>
+            </div>
+            <div id="location-message" class="form-message info hidden" role="status" aria-live="polite"></div>
+            <div class="callout">The backend rejects coordinates outside the selected city's municipal boundary. The portal never submits a city-centre point as if it were your location.</div>
+          </div>
+        </div>
+
+        <div id="report-confirmation" class="stack hidden" style="margin-top:18px">
+          <div class="confirm-hero">
+            <div class="ok">Complaint recorded</div>
+            <h2>Your complaint has been submitted</h2>
+            <p style="color:#b6d0e0;font-size:13px;margin-top:8px">Keep this ticket number for future reference. The details below are the values returned by the backend.</p>
+            <div class="confirm-ticket" id="confirm-ticket">—</div>
+          </div>
+          <div id="confirmation-warning" class="form-message warning hidden" role="status"></div>
+          <div class="detail-grid">
+            <section class="card">
+              <h2>Complaint details</h2>
+              <div class="kv" id="confirmation-details" style="margin-top:10px"></div>
+            </section>
+            <section class="card">
+              <h2>Classification and priority</h2>
+              <div class="kv" id="confirmation-ai" style="margin-top:10px"></div>
+              <div class="disclaimer amber" style="margin-top:12px">Priority is an AI-assisted estimate, not an official municipal decision. Department routing is handled by the municipal backend and is not invented or displayed here.</div>
+            </section>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn primary" data-goto="complaints">View my complaints</button>
+            <button type="button" class="btn" id="report-another">Report another issue</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Complaints -->
+      <section id="page-complaints" class="page" aria-labelledby="page-title">
+        <div class="section-head">
+          <div><h2>My complaints</h2><p>Only live complaints reported by your authenticated account are shown.</p></div>
+          <button type="button" class="btn small" id="complaints-refresh">Refresh</button>
+        </div>
+
+        <section class="card">
+          <div class="toolbar">
+            <div class="field">
+              <label for="filter-status">Status</label>
+              <select id="filter-status">
+                <option value="">All statuses</option>
+                <option value="reported">Reported</option>
+                <option value="acknowledged">Acknowledged</option>
+                <option value="in_progress">In progress</option>
+                <option value="resolved">Resolved</option>
+                <option value="rejected">Rejected</option>
+                <option value="duplicate">Duplicate</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="filter-category">Category</label>
+              <select id="filter-category">
+                <option value="">All categories</option>
+                <option value="Road_Damage">Road damage</option>
+                <option value="Garbage_Waste">Garbage and waste</option>
+                <option value="Streetlight">Streetlight</option>
+                <option value="Water_Supply">Water supply</option>
+                <option value="Drainage_Sewage">Drainage and sewage</option>
+                <option value="Traffic_Signal">Traffic signal</option>
+                <option value="Traffic_Management">Traffic management</option>
+                <option value="Trees_Environment">Trees and environment</option>
+                <option value="Illegal_Construction">Illegal construction</option>
+                <option value="Public_Property_Damage">Public property damage</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="grow"></div>
+            <button type="button" class="btn small ghost" id="filters-clear">Clear filters</button>
+          </div>
+          <div id="complaints-status" class="form-message info hidden" role="status" aria-live="polite"></div>
+          <div id="complaints-list" class="complaint-list"></div>
+          <div class="pager">
+            <span class="info" id="complaints-page-info"></span>
+            <div style="display:flex;gap:8px">
+              <button type="button" class="btn small" id="complaints-prev" disabled>Previous</button>
+              <button type="button" class="btn small" id="complaints-next" disabled>Next</button>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <!-- Detail -->
+      <section id="page-detail" class="page" aria-labelledby="page-title">
+        <div class="section-head">
+          <div><h2>Complaint details</h2><p>Full status history, classification information and authorised evidence.</p></div>
+          <button type="button" class="btn small" id="detail-back">Back to my complaints</button>
+        </div>
+        <div id="detail-status" class="form-message info hidden" role="status" aria-live="polite"></div>
+        <div id="detail-content" class="stack"></div>
+      </section>
+
+      <!-- Profile -->
+      <section id="page-profile" class="page" aria-labelledby="page-title">
+        <div class="section-head">
+          <div><h2>Your profile</h2><p>Account details returned by the authenticated UIMRS backend.</p></div>
+        </div>
+        <div class="profile-grid">
+          <section class="card stack">
+            <div class="profile-head">
+              <span class="avatar" id="profile-avatar" aria-hidden="true">U</span>
+              <div>
+                <h2 id="profile-name">Citizen</h2>
+                <p id="profile-email">—</p>
+                <span class="chip live" id="profile-role" style="margin-top:8px">citizen</span>
+              </div>
+            </div>
+            <div class="kv" id="profile-details"></div>
+          </section>
+          <section class="card stack">
+            <h2>Session and security</h2>
+            <p class="card-sub">This portal uses the existing UIMRS JWT authentication. Passwords are hashed by the backend and are never stored or logged by this page.</p>
+            <div class="callout info">Your bearer token is kept in this browser tab's session storage and is cleared when you sign out. Expired or invalid sessions return you to the sign-in screen.</div>
+            <div class="form-actions">
+              <button type="button" class="btn danger" id="profile-logout">Sign out of this session</button>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<!-- ==================== CHAT WIDGET ==================== -->
+<button type="button" id="chat-toggle" class="chat-toggle hidden" aria-expanded="false" aria-controls="chat-panel">
+  <span aria-hidden="true">◔</span> Support
+</button>
+<section id="chat-panel" class="chat-panel hidden" aria-label="Citizen support assistant">
+  <div class="chat-head">
+    <span class="chat-dot" aria-hidden="true"></span>
+    <div><b>Citizen support</b><p>General guidance assistant</p></div>
+    <button type="button" class="chat-close" id="chat-close" aria-label="Close support assistant">×</button>
+  </div>
+  <div class="chat-capability">This assistant answers general questions about reporting civic issues. It cannot look up, create or update complaint tickets.</div>
+  <div id="chat-log" class="chat-log" aria-live="polite">
+    <div class="chat-msg bot">Hello. Ask me about reporting an issue, evidence photos or how complaint status works. I do not have access to your ticket records.</div>
+  </div>
+  <form id="chat-form" class="chat-form">
+    <label for="chat-input" class="sr-only">Your question</label>
+    <input id="chat-input" type="text" autocomplete="off" placeholder="Ask a general question…" maxlength="500">
+    <button type="submit" class="btn primary" id="chat-send">Send</button>
+  </form>
+</section>
+
+<script>
+"use strict";
+
+/* =====================================================================
+   UIMRS Citizen Portal
+   - All dynamic text is written with textContent / DOM nodes.
+   - No raw HTML string injection or dynamic code evaluation.
+   - The bearer token lives in sessionStorage only.
+   ===================================================================== */
+
+const API_PREFIX = "/api/v1";
+const TOKEN_KEY = "uimrs_citizen_token";
+const PAGE_SIZE = 10;
+
+const CITIES = {
+  gurugram: {
+    label: "Gurugram, Haryana, India",
+    center: [28.4595, 77.0266],
+    bounds: [[28.20, 76.75], [28.65, 77.35]]
+  },
+  bengaluru: {
+    label: "Bengaluru, Karnataka, India",
+    center: [12.9716, 77.5946],
+    bounds: [[12.60, 77.25], [13.35, 77.95]]
+  }
+};
+
+const STATUSES = ["reported", "acknowledged", "in_progress", "resolved", "rejected", "duplicate"];
+const PAGE_META = {
+  dashboard: ["Dashboard", "Your live civic complaints and account overview."],
+  report: ["Report an issue", "Submit a genuine complaint with an exact map location."],
+  complaints: ["My complaints", "Track your own live submissions and their status."],
+  detail: ["Complaint details", "Classification, status history and authorised evidence."],
+  profile: ["Your profile", "Account details and session security."]
+};
+
+const state = {
+  token: null,
+  user: null,
+  cityKey: "gurugram",
+  selectedLocation: null,
+  reportMap: null,
+  reportMarker: null,
+  detailMap: null,
+  detailMarker: null,
+  dashboardIssues: [],
+  complaints: [],
+  complaintPage: 0,
+  blobUrls: new Set(),
+  lastIssue: null,
+  toastTimer: null
+};
+
+/* ------------------------------ DOM helpers ------------------------------ */
+function byId(id) { return document.getElementById(id); }
+
+function clearNode(node) {
+  if (node) node.replaceChildren();
+}
+
+function textValue(value, fallback) {
+  if (value === null || value === undefined) return fallback === undefined ? "Not available" : fallback;
+  const text = String(value).trim();
+  return text === "" ? (fallback === undefined ? "Not available" : fallback) : text;
+}
+
+function make(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = textValue(text, "");
+  return node;
+}
+
+function append(parent, child) {
+  if (parent && child) parent.appendChild(child);
+  return child;
+}
+
+function show(node, visible) {
+  if (node) node.classList.toggle("hidden", !visible);
+}
+
+function setMessage(node, message, kind) {
+  if (!node) return;
+  if (!message) {
+    node.textContent = "";
+    node.className = "form-message hidden";
+    return;
+  }
+  node.textContent = message;
+  node.className = "form-message " + (kind || "info");
+}
+
+function showToast(message, kind) {
+  const toast = byId("toast");
+  if (!toast) return;
+  toast.textContent = textValue(message, "");
+  toast.className = "toast show" + (kind ? " " + kind : "");
+  if (state.toastTimer) window.clearTimeout(state.toastTimer);
+  state.toastTimer = window.setTimeout(() => {
+    toast.className = "toast" + (kind ? " " + kind : "");
+  }, 4200);
+}
+
+function prettyEnum(value) {
+  const text = textValue(value, "Not available").replaceAll("_", " ");
+  return text.replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function statusLabel(value) {
+  const key = String(value || "");
+  if (key === "in_progress") return "In progress";
+  return prettyEnum(key);
+}
+
+function safeStatus(value) {
+  const key = String(value || "");
+  return STATUSES.includes(key) ? key : "unknown";
+}
+
+function parseDate(value) {
+  if (!value) return null;
+  let text = String(value);
+  if (!/[zZ]$|[+-]\d\d:?\d\d$/.test(text)) text += "Z";
+  const date = new Date(text);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatDate(value) {
+  const date = parseDate(value);
+  if (!date) return "Not available";
+  return date.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+}
+
+function formatDay(value) {
+  const date = parseDate(value);
+  if (!date) return "Not available";
+  return date.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+}
+
+function formatNumber(value, digits) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "Not available";
+  return n.toFixed(digits === undefined ? 3 : digits);
+}
+
+function initials(name) {
+  const parts = textValue(name, "Citizen").split(/\s+/).filter(Boolean);
+  if (!parts.length) return "U";
+  const first = parts[0].charAt(0);
+  const last = parts.length > 1 ? parts[parts.length - 1].charAt(0) : "";
+  return (first + last).toUpperCase();
+}
+
+function statusChip(status) {
+  return make("span", "chip status-" + safeStatus(status), statusLabel(status));
+}
+
+function priorityChip(level) {
+  if (!level) return make("span", "chip", "Priority unavailable");
+  return make("span", "chip priority-" + String(level).toLowerCase(), String(level) + " priority");
+}
+
+function reviewChip(issue) {
+  if (issue.category_needs_review === true) return make("span", "chip review-yes", "Human review requested");
+  if (issue.category_needs_review === false) return make("span", "chip review-no", "No review requested");
+  return make("span", "chip review-unknown", "Review status unavailable");
+}
+
+function emptyState(title, message) {
+  const box = make("div", "empty");
+  append(box, make("div", "empty-icon", "◌"));
+  append(box, make("h3", "", title));
+  append(box, make("p", "", message));
+  return box;
+}
+
+/* ------------------------------ API layer ------------------------------ */
+async function readErrorMessage(response) {
+  let payload = null;
+  try { payload = await response.json(); } catch (error) { payload = null; }
+  const detail = payload && payload.detail;
+  if (Array.isArray(detail)) {
+    const messages = detail
+      .map((item) => (item && (item.msg || item.message)) || "Invalid value")
+      .filter(Boolean);
+    if (messages.length) return messages.join(" ");
+  }
+  if (typeof detail === "string" && detail.trim()) return detail.trim();
+  return "Request failed (HTTP " + response.status + ").";
+}
+
+function authHeaders(extra) {
+  const headers = Object.assign({}, extra || {});
+  if (state.token) headers.Authorization = "Bearer " + state.token;
+  return headers;
+}
+
+async function apiRequest(path, options) {
+  const opts = options || {};
+  const method = opts.method || "GET";
+  const body = opts.body;
+  const auth = opts.auth !== false;
+  const headers = auth ? authHeaders(opts.headers) : Object.assign({}, opts.headers || {});
+  const isForm = typeof FormData !== "undefined" && body instanceof FormData;
+  if (body !== undefined && !isForm) headers["Content-Type"] = "application/json";
+
+  let response;
+  try {
+    response = await fetch(API_PREFIX + path, {
+      method,
+      headers,
+      body: body === undefined ? undefined : (isForm ? body : JSON.stringify(body))
+    });
+  } catch (error) {
+    throw new Error("The UIMRS service could not be reached. Check your connection and try again.");
+  }
+
+  if (response.status === 401 && auth) {
+    endSession("Your session has expired or is no longer valid. Please sign in again.");
+    throw new Error("Session expired.");
+  }
+
+  if (!response.ok) throw new Error(await readErrorMessage(response));
+  if (response.status === 204) return null;
+  return response.json();
+}
+
+async function apiBlob(path) {
+  let response;
+  try {
+    response = await fetch(API_PREFIX + path, { headers: authHeaders() });
+  } catch (error) {
+    throw new Error("Evidence could not be downloaded.");
+  }
+  if (response.status === 401) {
+    endSession("Your session has expired or is no longer valid. Please sign in again.");
+    throw new Error("Session expired.");
+  }
+  if (!response.ok) throw new Error("Evidence could not be downloaded.");
+  return response.blob();
+}
+
+/* ------------------------------ Session ------------------------------ */
+function readToken() {
+  try { return window.sessionStorage.getItem(TOKEN_KEY); } catch (error) { return null; }
+}
+
+function persistToken(token) {
+  try { window.sessionStorage.setItem(TOKEN_KEY, token); } catch (error) { /* session storage may be unavailable */ }
+}
+
+function forgetToken() {
+  try { window.sessionStorage.removeItem(TOKEN_KEY); } catch (error) { /* ignore */ }
+}
+
+function revokeEvidenceUrls() {
+  state.blobUrls.forEach((url) => {
+    try { URL.revokeObjectURL(url); } catch (error) { /* ignore */ }
+  });
+  state.blobUrls.clear();
+}
+
+function resetSessionUi() {
+  resetReportForm(true);
+  show(byId("report-confirmation"), false);
+  show(byId("report-form-wrap"), true);
+  setMessage(byId("report-message"), "", "info");
+  setMessage(byId("confirmation-warning"), "", "warning");
+  clearNode(byId("confirmation-details"));
+  clearNode(byId("confirmation-ai"));
+  byId("confirm-ticket").textContent = "—";
+  clearNode(byId("detail-content"));
+  setMessage(byId("detail-status"), "", "info");
+  clearNode(byId("complaints-list"));
+  byId("filter-status").value = "";
+  byId("filter-category").value = "";
+  byId("complaints-page-info").textContent = "";
+  byId("complaints-prev").disabled = true;
+  byId("complaints-next").disabled = true;
+  clearNode(byId("dashboard-latest"));
+  ["stat-total", "stat-open", "stat-resolved", "stat-review"].forEach((id) => {
+    byId(id).textContent = "—";
+  });
+  byId("dashboard-note").textContent = "";
+  clearNode(byId("chat-log"));
+  appendChat("bot", "Hello. Ask me about reporting an issue, evidence photos or how complaint status works. I do not have access to your ticket records.");
+  state.dashboardIssues = [];
+  state.complaints = [];
+  state.complaintPage = 0;
+  state.lastIssue = null;
+}
+
+function endSession(message) {
+  revokeEvidenceUrls();
+  destroyDetailMap();
+  resetSessionUi();
+  state.token = null;
+  state.user = null;
+  forgetToken();
+  closeChat();
+  showAuth(message || "");
+}
+
+function showAuth(notice) {
+  show(byId("app-view"), false);
+  show(byId("auth-view"), true);
+  show(byId("chat-toggle"), false);
+  closeChat();
+  const box = byId("auth-notice");
+  if (notice) {
+    box.textContent = notice;
+    show(box, true);
+  } else {
+    box.textContent = "";
+    show(box, false);
+  }
+  const loginEmail = byId("login-email");
+  if (loginEmail) loginEmail.focus();
+}
+
+function renderUser() {
+  const user = state.user || {};
+  const name = textValue(user.name, "Citizen");
+  const role = textValue(user.role, "citizen");
+  byId("side-avatar").textContent = initials(name);
+  byId("side-name").textContent = name;
+  byId("side-role").textContent = role;
+  byId("topbar-role").textContent = role;
+  byId("profile-avatar").textContent = initials(name);
+  byId("profile-name").textContent = name;
+  byId("profile-email").textContent = textValue(user.email, "Not available");
+  byId("profile-role").textContent = role;
+  byId("welcome-title").textContent = "Welcome, " + name;
+
+  const details = byId("profile-details");
+  clearNode(details);
+  const rows = [
+    ["Full name", name],
+    ["Email address", textValue(user.email, "Not available")],
+    ["Phone number", textValue(user.phone, "Not provided")],
+    ["Account role", role],
+    ["Preferred language", textValue(user.preferred_language, "en")],
+    ["Member since", user.created_at ? formatDay(user.created_at) : "Not available"]
+  ];
+  rows.forEach((row) => append(details, kvRow(row[0], row[1])));
+
+  const isOfficer = String(user.role || "").toLowerCase() === "officer";
+  show(byId("nav-report"), !isOfficer);
+  show(byId("report-officer-note"), isOfficer);
+  show(byId("report-form-wrap"), !isOfficer);
+}
+
+function showApp() {
+  show(byId("auth-view"), false);
+  show(byId("app-view"), true);
+  show(byId("chat-toggle"), true);
+  renderUser();
+  switchPage("dashboard");
+}
+
+/* ------------------------------ Auth UI ------------------------------ */
+function selectAuthTab(which) {
+  const login = which === "login";
+  byId("tab-login").classList.toggle("active", login);
+  byId("tab-register").classList.toggle("active", !login);
+  byId("tab-login").setAttribute("aria-selected", login ? "true" : "false");
+  byId("tab-register").setAttribute("aria-selected", !login ? "true" : "false");
+  show(byId("login-form"), login);
+  show(byId("register-form"), !login);
+  byId("auth-title").textContent = login ? "Welcome back" : "Create your citizen account";
+  byId("auth-lede").textContent = login
+    ? "Sign in to report a new issue and track your existing complaints."
+    : "Register with the existing UIMRS authentication service. Public accounts are always citizens.";
+  setMessage(byId("login-error"), "", "error");
+  setMessage(byId("register-error"), "", "error");
+  const target = login ? byId("login-email") : byId("register-name");
+  if (target) target.focus();
+}
+
+async function handleLogin(event) {
+  event.preventDefault();
+  const email = byId("login-email").value.trim();
+  const password = byId("login-password").value;
+  const errorBox = byId("login-error");
+  setMessage(errorBox, "", "error");
+
+  if (!email || !password) {
+    setMessage(errorBox, "Enter both your email address and password.", "error");
+    return;
+  }
+
+  const button = byId("login-submit");
+  button.disabled = true;
+  button.textContent = "Signing in…";
+  try {
+    const data = await apiRequest("/auth/login", {
+      method: "POST",
+      auth: false,
+      body: { email, password }
+    });
+    if (!data || !data.access_token) throw new Error("The login response did not include a session token.");
+    state.token = data.access_token;
+    state.user = data.user || null;
+    persistToken(data.access_token);
+    if (!state.user) state.user = await apiRequest("/auth/me");
+    byId("login-password").value = "";
+    showApp();
+    showToast("Signed in as " + textValue(state.user && state.user.name, "citizen") + ".", "success");
+  } catch (error) {
+    setMessage(errorBox, error.message, "error");
+  } finally {
+    button.disabled = false;
+    button.textContent = "Sign in securely";
+  }
+}
+
+async function handleRegister(event) {
+  event.preventDefault();
+  const name = byId("register-name").value.trim();
+  const email = byId("register-email").value.trim();
+  const phone = byId("register-phone").value.trim();
+  const password = byId("register-password").value;
+  const confirm = byId("register-confirm").value;
+  const language = byId("register-language").value;
+  const errorBox = byId("register-error");
+  setMessage(errorBox, "", "error");
+
+  if (!name || !email || !password) {
+    setMessage(errorBox, "Name, email address and password are required.", "error");
+    return;
+  }
+  if (password.length < 8) {
+    setMessage(errorBox, "Password must be at least 8 characters.", "error");
+    return;
+  }
+  if (password !== confirm) {
+    setMessage(errorBox, "The two password entries do not match.", "error");
+    return;
+  }
+
+  const button = byId("register-submit");
+  button.disabled = true;
+  button.textContent = "Creating account…";
+  try {
+    await apiRequest("/auth/register", {
+      method: "POST",
+      auth: false,
+      body: {
+        name,
+        email,
+        phone: phone ? phone : null,
+        password,
+        preferred_language: language
+      }
+    });
+    const data = await apiRequest("/auth/login", {
+      method: "POST",
+      auth: false,
+      body: { email, password }
+    });
+    if (!data || !data.access_token) throw new Error("Account created, but automatic sign-in failed. Please sign in manually.");
+    state.token = data.access_token;
+    state.user = data.user || await apiRequest("/auth/me");
+    persistToken(data.access_token);
+    byId("register-form").reset();
+    showApp();
+    showToast("Citizen account created. Welcome to UIMRS.", "success");
+  } catch (error) {
+    setMessage(errorBox, error.message, "error");
+  } finally {
+    button.disabled = false;
+    button.textContent = "Create citizen account";
+  }
+}
+
+/* ------------------------------ Navigation ------------------------------ */
+function switchPage(page) {
+  const name = PAGE_META[page] ? page : "dashboard";
+  document.querySelectorAll(".page").forEach((node) => {
+    node.classList.toggle("active", node.id === "page-" + name);
+  });
+  document.querySelectorAll(".nav-btn").forEach((node) => {
+    node.classList.toggle("active", node.dataset.page === name);
+  });
+  const meta = PAGE_META[name];
+  byId("page-title").textContent = meta[0];
+  byId("page-subtitle").textContent = meta[1];
+  byId("app-view").classList.remove("nav-open");
+  const toggle = byId("menu-toggle");
+  if (toggle) toggle.setAttribute("aria-expanded", "false");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+
+  if (name === "report") {
+    window.setTimeout(() => {
+      ensureReportMap();
+      if (state.reportMap) state.reportMap.invalidateSize(true);
+    }, 60);
+  }
+  if (name === "complaints") loadComplaints(true);
+  if (name === "dashboard") refreshDashboard();
+}
+
+/* ------------------------------ Dashboard ------------------------------ */
+async function refreshDashboard() {
+  if (!state.token) return;
+  try {
+    const rows = await apiRequest("/issues?limit=500");
+    state.dashboardIssues = Array.isArray(rows) ? rows : [];
+    renderDashboard();
+  } catch (error) {
+    if (!state.token) return;
+    showToast(error.message, "error");
+  }
+}
+
+function renderDashboard() {
+  const rows = state.dashboardIssues.slice();
+  const open = rows.filter((issue) => ["reported", "acknowledged", "in_progress"].includes(String(issue.status)));
+  const resolved = rows.filter((issue) => String(issue.status) === "resolved");
+  const review = rows.filter((issue) => issue.category_needs_review === true);
+
+  byId("stat-total").textContent = String(rows.length);
+  byId("stat-open").textContent = String(open.length);
+  byId("stat-resolved").textContent = String(resolved.length);
+  byId("stat-review").textContent = String(review.length);
+  byId("dashboard-note").textContent = rows.length === 500
+    ? "Counts are based on the 500 most recent complaints returned by the API."
+    : "Counts are calculated from the live complaints returned for your account.";
+
+  const target = byId("dashboard-latest");
+  clearNode(target);
+  if (!rows.length) {
+    append(target, emptyState("No complaints yet", "When you report your first urban issue it will appear here with its real ticket number and status."));
+    return;
+  }
+  const latest = rows
+    .slice()
+    .sort((a, b) => (parseDate(b.created_at)?.getTime() || 0) - (parseDate(a.created_at)?.getTime() || 0))
+    .slice(0, 5);
+  latest.forEach((issue) => append(target, complaintCard(issue)));
+}
+
+/* ------------------------------ Complaint cards ------------------------------ */
+function complaintCard(issue) {
+  const card = make("article", "complaint-card");
+  card.setAttribute("role", "button");
+  card.setAttribute("tabindex", "0");
+  card.setAttribute("aria-label", "Open complaint " + textValue(issue.ticket_number, "details"));
+
+  const top = make("div", "complaint-top");
+  append(top, make("span", "ticket", textValue(issue.ticket_number, "Ticket unavailable")));
+  append(top, statusChip(issue.status));
+  append(top, reviewChip(issue));
+  append(card, top);
+
+  append(card, make("h3", "", textValue(issue.title, "Untitled complaint")));
+
+  const meta = make("div", "complaint-meta");
+  append(meta, make("span", "", prettyEnum(issue.category)));
+  append(meta, make("span", "dot"));
+  append(meta, make("span", "", textValue(issue.city, "City not recorded")));
+  append(card, meta);
+
+  const foot = make("div", "complaint-foot");
+  append(foot, make("span", "when", "Submitted " + formatDate(issue.created_at)));
+  append(foot, priorityChip(issue.priority_level));
+  append(card, foot);
+
+  const open = () => openIssue(issue.id);
+  card.addEventListener("click", open);
+  card.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      open();
+    }
+  });
+  return card;
+}
+
+/* ------------------------------ Complaints list ------------------------------ */
+async function loadComplaints(resetPage) {
+  if (!state.token) return;
+  if (resetPage) state.complaintPage = 0;
+  const list = byId("complaints-list");
+  const statusBox = byId("complaints-status");
+  setMessage(statusBox, "Loading your complaints…", "info");
+  byId("complaints-prev").disabled = true;
+  byId("complaints-next").disabled = true;
+
+  const params = new URLSearchParams();
+  params.set("skip", String(state.complaintPage * PAGE_SIZE));
+  params.set("limit", String(PAGE_SIZE));
+  const status = byId("filter-status").value;
+  const category = byId("filter-category").value;
+  if (status) params.set("status", status);
+  if (category) params.set("category", category);
+
+  try {
+    const rows = await apiRequest("/issues?" + params.toString());
+    state.complaints = Array.isArray(rows) ? rows : [];
+    clearNode(list);
+    if (!state.complaints.length) {
+      setMessage(statusBox, "", "info");
+      const filtered = Boolean(status || category);
+      append(list, emptyState(
+        filtered ? "No complaints match these filters" : "No complaints yet",
+        filtered
+          ? "Try a different status or category, or clear the filters to see all your complaints."
+          : "You have not submitted a live complaint yet. Use “Report an issue” to create a genuine record."
+      ));
+    } else {
+      setMessage(statusBox, "", "info");
+      state.complaints.forEach((issue) => append(list, complaintCard(issue)));
+    }
+
+    byId("complaints-page-info").textContent =
+      "Page " + (state.complaintPage + 1) + " · showing " + state.complaints.length + " complaint" + (state.complaints.length === 1 ? "" : "s");
+    byId("complaints-prev").disabled = state.complaintPage === 0;
+    byId("complaints-next").disabled = state.complaints.length < PAGE_SIZE;
+  } catch (error) {
+    if (!state.token) return;
+    clearNode(list);
+    setMessage(statusBox, error.message, "error");
+  }
+}
+
+/* ------------------------------ Report map ------------------------------ */
+function ensureReportMap() {
+  if (state.reportMap || typeof L === "undefined") return;
+  const city = CITIES[state.cityKey];
+  state.reportMap = L.map("report-map", { scrollWheelZoom: true }).setView(city.center, 12);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: "© OpenStreetMap contributors"
+  }).addTo(state.reportMap);
+  state.reportMap.on("click", (event) => {
+    setReportMarker(event.latlng.lat, event.latlng.lng, false);
+  });
+}
+
+function setReportMarker(lat, lng, pan) {
+  if (!state.reportMap) return;
+  state.selectedLocation = { lat: Number(lat), lng: Number(lng) };
+  if (!state.reportMarker) {
+    state.reportMarker = L.marker([state.selectedLocation.lat, state.selectedLocation.lng], { draggable: true }).addTo(state.reportMap);
+    state.reportMarker.on("dragend", () => {
+      const position = state.reportMarker.getLatLng();
+      setReportMarker(position.lat, position.lng, false);
+    });
+  } else {
+    state.reportMarker.setLatLng([state.selectedLocation.lat, state.selectedLocation.lng]);
+  }
+  if (pan) state.reportMap.setView([state.selectedLocation.lat, state.selectedLocation.lng], 16);
+  updateCoordinateReadout();
+}
+
+function clearReportMarker() {
+  if (state.reportMarker) {
+    state.reportMarker.remove();
+    state.reportMarker = null;
+  }
+  state.selectedLocation = null;
+  updateCoordinateReadout();
+  setMessage(byId("location-message"), "", "info");
+}
+
+function updateCoordinateReadout() {
+  const lat = byId("coord-lat");
+  const lng = byId("coord-lng");
+  if (!state.selectedLocation) {
+    lat.textContent = "Not selected";
+    lng.textContent = "Not selected";
+    return;
+  }
+  lat.textContent = formatNumber(state.selectedLocation.lat, 6);
+  lng.textContent = formatNumber(state.selectedLocation.lng, 6);
+}
+
+function withinCityBounds(cityKey, lat, lng) {
+  const bounds = CITIES[cityKey].bounds;
+  return lat >= bounds[0][0] && lat <= bounds[1][0] && lng >= bounds[0][1] && lng <= bounds[1][1];
+}
+
+function handleCityChange() {
+  const select = byId("report-city");
+  const nextKey = select.value in CITIES ? select.value : "gurugram";
+  state.cityKey = nextKey;
+  clearReportMarker();
+  if (state.reportMap) state.reportMap.setView(CITIES[nextKey].center, 12);
+  setMessage(byId("location-message"), "City changed. Select the exact complaint location again on the map.", "info");
+}
+
+function requestBrowserLocation() {
+  if (!navigator.geolocation) {
+    setMessage(byId("location-message"), "This browser does not support geolocation. Select the location on the map instead.", "error");
+    return;
+  }
+  const button = byId("use-location");
+  button.disabled = true;
+  button.textContent = "Locating…";
+  setMessage(byId("location-message"), "Requesting your browser location. Allow access only if you want to use your current position.", "info");
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      button.disabled = false;
+      button.textContent = "Use my current location";
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+      setReportMarker(lat, lng, true);
+      if (withinCityBounds(state.cityKey, lat, lng)) {
+        const accuracy = Number(position.coords.accuracy);
+        setMessage(
+          byId("location-message"),
+          "Location captured" + (Number.isFinite(accuracy) ? " (accuracy ±" + Math.round(accuracy) + " m)" : "") + ". Drag the marker if it needs correction.",
+          "success"
+        );
+      } else {
+        setMessage(
+          byId("location-message"),
+          "Your captured position is outside " + CITIES[state.cityKey].label + ". Move the marker inside the city boundary before submitting.",
+          "warning"
+        );
+      }
+    },
+    () => {
+      button.disabled = false;
+      button.textContent = "Use my current location";
+      setMessage(byId("location-message"), "Location permission was denied or unavailable. You can still choose the location on the map.", "error");
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+  );
+}
+
+/* ------------------------------ Report submit ------------------------------ */
+function validateEvidenceFile(file) {
+  if (!file) return "";
+  const allowed = ["image/jpeg", "image/png", "image/webp"];
+  const extension = String(file.name || "").split(".").pop().toLowerCase();
+  const allowedExtensions = ["jpg", "jpeg", "png", "webp"];
+  if (!allowed.includes(file.type) && !allowedExtensions.includes(extension)) {
+    return "Only JPEG, PNG or WebP images are accepted.";
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    return "The selected photo is larger than the 10 MB upload limit.";
+  }
+  return "";
+}
+
+async function uploadEvidence(issueId, file) {
+  const form = new FormData();
+  form.append("file", file, file.name);
+  return apiRequest("/issues/" + encodeURIComponent(issueId) + "/images", {
+    method: "POST",
+    body: form
+  });
+}
+
+function resetReportForm(clearCity) {
+  byId("report-title").value = "";
+  byId("report-description").value = "";
+  byId("report-address").value = "";
+  byId("report-file").value = "";
+  clearReportMarker();
+  setMessage(byId("report-message"), "", "info");
+  if (clearCity) {
+    byId("report-city").value = "gurugram";
+    state.cityKey = "gurugram";
+  }
+  if (state.reportMap) state.reportMap.setView(CITIES[state.cityKey].center, 12);
+}
+
+async function handleReportSubmit(event) {
+  event.preventDefault();
+  const message = byId("report-message");
+  setMessage(message, "", "info");
+
+  const title = byId("report-title").value.trim();
+  const description = byId("report-description").value.trim();
+  const address = byId("report-address").value.trim();
+  const file = byId("report-file").files[0] || null;
+
+  if (title.length < 5) {
+    setMessage(message, "Enter an issue title of at least 5 characters.", "error");
+    return;
+  }
+  if (description.length < 10) {
+    setMessage(message, "Enter a description of at least 10 characters.", "error");
+    return;
+  }
+  if (!state.selectedLocation) {
+    setMessage(message, "Select the exact complaint location on the map before submitting.", "error");
+    return;
+  }
+  const lat = state.selectedLocation.lat;
+  const lng = state.selectedLocation.lng;
+  if (!withinCityBounds(state.cityKey, lat, lng)) {
+    setMessage(message, "The selected coordinates are outside " + CITIES[state.cityKey].label + ". Choose a location inside the city boundary.", "error");
+    return;
+  }
+  const fileError = validateEvidenceFile(file);
+  if (fileError) {
+    setMessage(message, fileError, "error");
+    return;
+  }
+
+  const button = byId("report-submit");
+  button.disabled = true;
+  button.textContent = "Submitting…";
+
+  try {
+    const issue = await apiRequest("/issues", {
+      method: "POST",
+      body: {
+        title,
+        description,
+        city: CITIES[state.cityKey].label,
+        latitude: lat,
+        longitude: lng,
+        address_text: address || null
+      }
+    });
+
+    let warning = "";
+    if (file) {
+      try {
+        await uploadEvidence(issue.id, file);
+      } catch (error) {
+        warning = "The complaint was submitted, but the photograph could not be attached: " + error.message;
+      }
+    }
+
+    state.lastIssue = issue;
+    renderConfirmation(issue, warning);
+    show(byId("report-form-wrap"), false);
+    show(byId("report-confirmation"), true);
+    resetReportForm(false);
+    showToast("Complaint submitted. Ticket " + textValue(issue.ticket_number, "issued") + ".", "success");
+    await refreshDashboard();
+  } catch (error) {
+    setMessage(message, error.message, "error");
+  } finally {
+    button.disabled = false;
+    button.textContent = "Submit complaint";
+  }
+}
+
+/* ------------------------------ Confirmation ------------------------------ */
+function kvRow(label, value) {
+  const row = make("div", "kv-row");
+  append(row, make("span", "k", label));
+  append(row, make("span", "v", textValue(value, "Not available")));
+  return row;
+}
+
+function classificationSourceText(source) {
+  const key = String(source || "");
+  if (key === "bengaluru_v2_2_ml") return "Bengaluru V2.2 ML classifier";
+  if (key === "india_keyword_rule") return "Indian keyword rules";
+  if (key === "needs_clarification") return "Needs clarification";
+  if (key === "empty_input") return "No text input";
+  if (!key) return "Not available";
+  return "Recorded source: " + key;
+}
+
+function scoreKindText(kind) {
+  const key = String(kind || "");
+  if (key === "uncalibrated_model_score") return "Uncalibrated model score (not a calibrated probability)";
+  if (key === "rule_heuristic") return "Keyword-rule heuristic score";
+  if (key === "none") return "No score produced";
+  return key ? "Recorded score kind: " + key : "Not available";
+}
+
+function scoreValueText(issue) {
+  if (issue.category_confidence === null || issue.category_confidence === undefined) return "Not available";
+  const value = formatNumber(issue.category_confidence, 3);
+  if (issue.category_score_kind === "uncalibrated_model_score") return value + " · uncalibrated model score";
+  if (issue.category_score_kind === "rule_heuristic") return value + " · keyword-rule heuristic";
+  return value;
+}
+
+function reviewText(issue) {
+  if (issue.category_needs_review === true) {
+    return "Human review requested" + (issue.category_review_reason ? ": " + issue.category_review_reason : ".");
+  }
+  if (issue.category_needs_review === false) return "Classifier did not request human review.";
+  return "Human-review state not available.";
+}
+
+function appendReasons(parent, reasons) {
+  if (!Array.isArray(reasons) || !reasons.length) {
+    append(parent, make("p", "small muted", "No stored priority reasons are available."));
+    return;
+  }
+  const list = make("ul", "reason-list");
+  reasons.forEach((reason) => append(list, make("li", "", reason)));
+  append(parent, list);
+}
+
+function appendAlternatives(parent, alternatives) {
+  if (!Array.isArray(alternatives) || !alternatives.length) return;
+  const wrap = make("div", "alt-list");
+  alternatives.forEach((item) => {
+    if (!item || typeof item !== "object") return;
+    const label = prettyEnum(item.category) + (item.model_score !== undefined ? " · " + formatNumber(item.model_score, 3) : "");
+    append(wrap, make("span", "chip soft", label));
+  });
+  if (wrap.childNodes.length) {
+    append(parent, make("p", "small muted", "Model alternatives recorded for this complaint:"));
+    append(parent, wrap);
+  }
+}
+
+function fillClassificationRows(target, issue) {
+  clearNode(target);
+  append(target, kvRow("Category", prettyEnum(issue.category)));
+  append(target, kvRow("Classification source", classificationSourceText(issue.category_source)));
+  append(target, kvRow("Model version", textValue(issue.category_model_version, "Not available")));
+  append(target, kvRow("Score", scoreValueText(issue)));
+  append(target, kvRow("Score kind", scoreKindText(issue.category_score_kind)));
+  append(target, kvRow("Human review", reviewText(issue)));
+  appendAlternatives(target, issue.category_top_alternatives);
+}
+
+function fillPriorityRows(target, issue) {
+  clearNode(target);
+  append(target, kvRow("AI-estimated priority", issue.priority_level ? String(issue.priority_level) : "Not available"));
+  append(target, kvRow("Priority score", issue.priority_score === null || issue.priority_score === undefined ? "Not available" : formatNumber(issue.priority_score, 2)));
+  append(target, make("p", "small muted", "Stored priority reasons:"));
+  appendReasons(target, issue.priority_reasons);
+}
+
+function renderConfirmation(issue, warning) {
+  byId("confirm-ticket").textContent = textValue(issue.ticket_number, "Ticket not returned");
+  setMessage(byId("confirmation-warning"), warning || "", "warning");
+
+  const details = byId("confirmation-details");
+  clearNode(details);
+  append(details, kvRow("Ticket number", textValue(issue.ticket_number, "Not available")));
+  append(details, kvRow("Title", issue.title));
+  append(details, kvRow("City", textValue(issue.city, "Not available")));
+  append(details, kvRow("Status", statusLabel(issue.status)));
+  append(details, kvRow("Category", prettyEnum(issue.category)));
+  append(details, kvRow("Address", textValue(issue.address_text, "Not provided")));
+  append(details, kvRow("Coordinates", formatNumber(issue.latitude, 6) + ", " + formatNumber(issue.longitude, 6)));
+  append(details, kvRow("Submitted", formatDate(issue.created_at)));
+
+  fillClassificationRows(byId("confirmation-ai"), issue);
+  const ai = byId("confirmation-ai");
+  append(ai, kvRow("AI-estimated priority", issue.priority_level ? String(issue.priority_level) : "Not available"));
+  append(ai, kvRow("Priority score", issue.priority_score === null || issue.priority_score === undefined ? "Not available" : formatNumber(issue.priority_score, 2)));
+  append(ai, make("p", "small muted", "Stored priority reasons:"));
+  appendReasons(ai, issue.priority_reasons);
+}
+
+/* ------------------------------ Complaint detail ------------------------------ */
+function clearDetailMaps() {
+  if (state.detailMarker) {
+    state.detailMarker.remove();
+    state.detailMarker = null;
+  }
+}
+
+function destroyDetailMap() {
+  clearDetailMaps();
+  if (state.detailMap) {
+    try { state.detailMap.remove(); } catch (error) { /* already detached */ }
+    state.detailMap = null;
+  }
+}
+
+async function openIssue(issueId) {
+  if (!issueId) return;
+  switchPage("detail");
+  const statusBox = byId("detail-status");
+  const content = byId("detail-content");
+  setMessage(statusBox, "Loading complaint details…", "info");
+  clearNode(content);
+  revokeEvidenceUrls();
+  destroyDetailMap();
+
+  try {
+    const encoded = encodeURIComponent(issueId);
+    const results = await Promise.all([
+      apiRequest("/issues/" + encoded),
+      apiRequest("/issues/" + encoded + "/history"),
+      apiRequest("/issues/" + encoded + "/images")
+    ]);
+    const issue = results[0];
+    const history = Array.isArray(results[1]) ? results[1] : [];
+    const images = Array.isArray(results[2]) ? results[2] : [];
+    setMessage(statusBox, "", "info");
+    renderIssueDetail(issue, history, images);
+  } catch (error) {
+    if (!state.token) return;
+    setMessage(statusBox, error.message, "error");
+  }
+}
+
+function renderIssueDetail(issue, history, images) {
+  const content = byId("detail-content");
+  clearNode(content);
+
+  const hero = make("section", "card");
+  const top = make("div", "complaint-top");
+  append(top, make("span", "ticket", textValue(issue.ticket_number, "Ticket unavailable")));
+  append(top, statusChip(issue.status));
+  append(top, priorityChip(issue.priority_level));
+  append(top, reviewChip(issue));
+  append(hero, top);
+  append(hero, make("h2", "", textValue(issue.title, "Untitled complaint")));
+  append(hero, make("p", "card-sub", "Submitted " + formatDate(issue.created_at) + " · " + textValue(issue.city, "City not recorded")));
+  append(content, hero);
+
+  const grid = make("div", "detail-grid");
+
+  const main = make("div", "stack");
+  const details = make("section", "card");
+  append(details, make("h2", "", "Complaint information"));
+  const kv = make("div", "kv");
+  kv.style.marginTop = "10px";
+  append(kv, kvRow("Description", issue.description));
+  append(kv, kvRow("City", textValue(issue.city, "Not available")));
+  append(kv, kvRow("Address or landmark", textValue(issue.address_text, "Not provided")));
+  append(kv, kvRow("Coordinates", formatNumber(issue.latitude, 6) + ", " + formatNumber(issue.longitude, 6)));
+  append(kv, kvRow("Status", statusLabel(issue.status)));
+  append(kv, kvRow("Category", prettyEnum(issue.category)));
+  append(kv, kvRow("Last updated", issue.updated_at ? formatDate(issue.updated_at) : "Not available"));
+  append(details, kv);
+  append(main, details);
+
+  const aiCard = make("section", "card");
+  append(aiCard, make("h2", "", "Classification and priority"));
+  append(aiCard, make("p", "card-sub", "Values recorded by the backend when this complaint was processed."));
+  const aiKv = make("div", "kv");
+  aiKv.style.marginTop = "10px";
+  fillClassificationRows(aiKv, issue);
+  append(aiKv, kvRow("AI-estimated priority", issue.priority_level ? String(issue.priority_level) : "Not available"));
+  append(aiKv, kvRow("Priority score", issue.priority_score === null || issue.priority_score === undefined ? "Not available" : formatNumber(issue.priority_score, 2)));
+  append(aiCard, aiKv);
+  const reasons = make("div", "");
+  reasons.style.marginTop = "10px";
+  append(reasons, make("p", "small muted", "Stored priority reasons:"));
+  appendReasons(reasons, issue.priority_reasons);
+  append(aiCard, reasons);
+  append(aiCard, make("div", "disclaimer amber", "Priority is an AI-assisted estimate, not an official municipal decision."));
+  append(main, aiCard);
+
+  const historyCard = make("section", "card");
+  append(historyCard, make("h2", "", "Status history"));
+  append(historyCard, make("p", "card-sub", "Audit trail recorded by the municipal backend."));
+  if (!history.length) {
+    const empty = make("div", "empty");
+    empty.style.marginTop = "12px";
+    append(empty, make("h3", "", "No status updates recorded yet"));
+    append(empty, make("p", "", "The complaint is currently “" + statusLabel(issue.status) + "”. Updates made by municipal staff will appear here."));
+    append(historyCard, empty);
+  } else {
+    const list = make("ol", "timeline");
+    list.style.marginTop = "16px";
+    history.forEach((entry) => {
+      const item = make("li");
+      append(item, make("span", "timeline-dot", "•"));
+      const body = make("div", "timeline-body");
+      const head = make("div", "timeline-head");
+      append(head, statusChip(entry.new_status));
+      if (entry.old_status) append(head, make("span", "small muted", "from " + statusLabel(entry.old_status)));
+      append(head, make("time", "", formatDate(entry.created_at)));
+      append(body, head);
+      if (entry.comment) append(body, make("p", "", entry.comment));
+      append(item, body);
+      append(list, item);
+    });
+    append(historyCard, list);
+  }
+  append(main, historyCard);
+  append(grid, main);
+
+  const side = make("div", "stack");
+  const evidenceCard = make("section", "card");
+  append(evidenceCard, make("h2", "", "Evidence photographs"));
+  append(evidenceCard, make("p", "card-sub", "Loaded through an authenticated request. Files are never exposed as public static URLs."));
+  const gallery = make("div", "gallery");
+  gallery.style.marginTop = "12px";
+  append(evidenceCard, gallery);
+  if (!images.length) {
+    append(gallery, emptyState("No evidence attached", "This complaint has no uploaded photographs."));
+  } else {
+    images.forEach((image) => append(gallery, evidenceCardFor(issue.id, image)));
+    loadEvidenceImages(issue.id, images, gallery);
+  }
+  append(side, evidenceCard);
+
+  const mapCard = make("section", "card");
+  append(mapCard, make("h2", "", "Reported location"));
+  append(mapCard, make("p", "card-sub", "Stored coordinates selected by the citizen at submission time."));
+  const mapNode = make("div", "map-small");
+  mapNode.id = "detail-map";
+  mapNode.style.marginTop = "12px";
+  append(mapCard, mapNode);
+  append(side, mapCard);
+
+  const routing = make("section", "card");
+  append(routing, make("h2", "", "Routing note"));
+  append(routing, make("p", "card-sub", "Department assignment is determined by the municipal backend. This portal does not invent an official department, contact person or resolution promise."));
+  append(side, routing);
+
+  append(grid, side);
+  append(content, grid);
+
+  window.setTimeout(() => {
+    if (typeof L === "undefined") return;
+    if (!state.detailMap) {
+      state.detailMap = L.map("detail-map", { scrollWheelZoom: false }).setView([issue.latitude, issue.longitude], 15);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: "© OpenStreetMap contributors"
+      }).addTo(state.detailMap);
+    } else {
+      state.detailMap.setView([issue.latitude, issue.longitude], 15);
+    }
+    clearDetailMaps();
+    state.detailMarker = L.marker([issue.latitude, issue.longitude]).addTo(state.detailMap);
+    state.detailMap.invalidateSize(true);
+  }, 80);
+}
+
+function evidenceCardFor(issueId, image) {
+  const figure = make("figure", "evidence-card");
+  const img = document.createElement("img");
+  img.alt = "Evidence photograph attached to this complaint";
+  img.loading = "lazy";
+  const caption = make("figcaption");
+  append(caption, make("b", "", image.passed_verification ? "Quality checks passed" : "Attached — quality checks did not pass"));
+  append(caption, make("span", "", "Blur score " + formatNumber(image.blur_score, 1) + " · brightness " + formatNumber(image.brightness, 1)));
+  append(figure, img);
+  append(figure, caption);
+  img.dataset.issueId = issueId;
+  img.dataset.imageId = image.id;
+  return figure;
+}
+
+async function loadEvidenceImages(issueId, images, gallery) {
+  const figures = Array.from(gallery.querySelectorAll("figure.evidence-card"));
+  await Promise.all(images.map(async (image, index) => {
+    const figure = figures[index];
+    if (!figure) return;
+    const img = figure.querySelector("img");
+    const caption = figure.querySelector("figcaption");
+    if (!img) return;
+    try {
+      const blob = await apiBlob("/issues/" + encodeURIComponent(issueId) + "/images/" + encodeURIComponent(image.id) + "/content");
+      const url = URL.createObjectURL(blob);
+      state.blobUrls.add(url);
+      img.src = url;
+    } catch (error) {
+      if (caption) {
+        caption.replaceChildren();
+        append(caption, make("b", "", "Evidence unavailable"));
+        append(caption, make("span", "", "The authorised image request failed."));
+      }
+    }
+  }));
+}
+
+/* ------------------------------ Chat ------------------------------ */
+function appendChat(kind, message) {
+  const log = byId("chat-log");
+  const node = make("div", "chat-msg " + kind, textValue(message, "I could not process that request."));
+  append(log, node);
+  log.scrollTop = log.scrollHeight;
+  return node;
+}
+
+function openChat() {
+  show(byId("chat-panel"), true);
+  byId("chat-toggle").setAttribute("aria-expanded", "true");
+  byId("chat-input").focus();
+}
+
+function closeChat() {
+  const panel = byId("chat-panel");
+  if (!panel) return;
+  show(panel, false);
+  const toggle = byId("chat-toggle");
+  if (toggle) toggle.setAttribute("aria-expanded", "false");
+}
+
+function toggleChat() {
+  const panel = byId("chat-panel");
+  if (panel && !panel.classList.contains("hidden")) closeChat();
+  else openChat();
+}
+
+async function handleChatSubmit(event) {
+  event.preventDefault();
+  const input = byId("chat-input");
+  const message = input.value.trim();
+  if (!message) return;
+  appendChat("user", message);
+  input.value = "";
+  const send = byId("chat-send");
+  send.disabled = true;
+  const typing = appendChat("bot typing", "Thinking…");
+  try {
+    const data = await apiRequest("/chatbot/message", {
+      method: "POST",
+      auth: false,
+      body: { message }
+    });
+    typing.remove();
+    appendChat("bot", data.response || "I could not process that request.");
+    if (data.needs_human_handoff) {
+      appendChat("note", "This question may need human support. The assistant cannot access ticket records.");
+    }
+  } catch (error) {
+    typing.remove();
+    appendChat("bot", "The support assistant is unavailable right now. Please try again later.");
+  } finally {
+    send.disabled = false;
+    byId("chat-input").focus();
+  }
+}
+
+/* ------------------------------ Event wiring ------------------------------ */
+function bindEvents() {
+  byId("tab-login").addEventListener("click", () => selectAuthTab("login"));
+  byId("tab-register").addEventListener("click", () => selectAuthTab("register"));
+  byId("login-form").addEventListener("submit", handleLogin);
+  byId("register-form").addEventListener("submit", handleRegister);
+
+  document.querySelectorAll(".nav-btn").forEach((button) => {
+    button.addEventListener("click", () => switchPage(button.dataset.page));
+  });
+  document.querySelectorAll("[data-goto]").forEach((button) => {
+    button.addEventListener("click", () => switchPage(button.dataset.goto));
+  });
+  byId("dashboard-support").addEventListener("click", openChat);
+
+  byId("menu-toggle").addEventListener("click", () => {
+    const app = byId("app-view");
+    const open = app.classList.toggle("nav-open");
+    byId("menu-toggle").setAttribute("aria-expanded", open ? "true" : "false");
+  });
+  byId("nav-overlay").addEventListener("click", () => {
+    byId("app-view").classList.remove("nav-open");
+    byId("menu-toggle").setAttribute("aria-expanded", "false");
+  });
+
+  byId("side-logout").addEventListener("click", () => {
+    endSession("");
+    showToast("Signed out. Your session token has been cleared.", "success");
+  });
+  byId("profile-logout").addEventListener("click", () => {
+    endSession("");
+    showToast("Signed out. Your session token has been cleared.", "success");
+  });
+
+  byId("report-city").addEventListener("change", handleCityChange);
+  byId("use-location").addEventListener("click", requestBrowserLocation);
+  byId("clear-location").addEventListener("click", clearReportMarker);
+  byId("report-form").addEventListener("submit", handleReportSubmit);
+  byId("report-reset").addEventListener("click", () => {
+    resetReportForm(true);
+    showToast("Report form cleared.", "success");
+  });
+  byId("report-another").addEventListener("click", () => {
+    show(byId("report-confirmation"), false);
+    show(byId("report-form-wrap"), true);
+    switchPage("report");
+    window.setTimeout(() => {
+      ensureReportMap();
+      if (state.reportMap) state.reportMap.invalidateSize(true);
+    }, 60);
+  });
+
+  byId("filter-status").addEventListener("change", () => loadComplaints(true));
+  byId("filter-category").addEventListener("change", () => loadComplaints(true));
+  byId("filters-clear").addEventListener("click", () => {
+    byId("filter-status").value = "";
+    byId("filter-category").value = "";
+    loadComplaints(true);
+  });
+  byId("complaints-refresh").addEventListener("click", () => loadComplaints(false));
+  byId("complaints-prev").addEventListener("click", () => {
+    if (state.complaintPage > 0) {
+      state.complaintPage -= 1;
+      loadComplaints(false);
+    }
+  });
+  byId("complaints-next").addEventListener("click", () => {
+    state.complaintPage += 1;
+    loadComplaints(false);
+  });
+  byId("detail-back").addEventListener("click", () => {
+    revokeEvidenceUrls();
+    destroyDetailMap();
+    switchPage("complaints");
+  });
+
+  byId("chat-toggle").addEventListener("click", toggleChat);
+  byId("chat-close").addEventListener("click", closeChat);
+  byId("chat-form").addEventListener("submit", handleChatSubmit);
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    closeChat();
+    byId("app-view").classList.remove("nav-open");
+    byId("menu-toggle").setAttribute("aria-expanded", "false");
+  });
+}
+
+/* ------------------------------ Boot ------------------------------ */
+async function boot() {
+  bindEvents();
+  const token = readToken();
+  if (!token) {
+    showAuth("");
+    return;
+  }
+  state.token = token;
+  try {
+    const user = await apiRequest("/auth/me");
+    state.user = user;
+    showApp();
+  } catch (error) {
+    // apiRequest already clears an expired/invalid session; this covers other
+    // failures (for example, the service being unreachable).
+    if (state.token) endSession("We could not verify your session. Please sign in again.");
+  }
+}
+
+document.addEventListener("DOMContentLoaded", boot);
+</script>
+</body>
+</html>

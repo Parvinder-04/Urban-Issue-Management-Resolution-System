@@ -1,0 +1,2460 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="UIMRS administrator oversight portal — live operations, manual jurisdiction review, officer management, verified directory and audit history.">
+<title>UIMRS Administrator Portal</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<style>
+:root{
+  --navy:#0b1f3a;
+  --navy-2:#122c4f;
+  --ink:#16283d;
+  --muted:#5d7185;
+  --accent:#1d4ed8;
+  --accent-strong:#2563eb;
+  --accent-soft:#dbeafe;
+  --sand:#f3f6fa;
+  --card:#ffffff;
+  --line:#dbe4ee;
+  --line-strong:#c6d3e2;
+  --amber:#b45309;
+  --amber-soft:#fef3c7;
+  --red:#b91c1c;
+  --red-soft:#fee2e2;
+  --green:#166534;
+  --green-soft:#dcfce7;
+  --violet:#6d28d9;
+  --violet-soft:#ede9fe;
+  --slate-soft:#e2e8f0;
+  --shadow:0 20px 45px rgba(11,31,58,.10);
+  --shadow-soft:0 8px 20px rgba(11,31,58,.07);
+  --radius:18px;
+  --radius-sm:12px;
+}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{
+  margin:0;font-family:"Segoe UI",system-ui,-apple-system,BlinkMacSystemFont,Arial,sans-serif;
+  background:var(--sand);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased
+}
+h1,h2,h3,h4{margin:0;line-height:1.2;letter-spacing:-.015em}
+p{margin:0}
+a{color:var(--accent)}
+button{font:inherit}
+img{max-width:100%;display:block}
+.hidden{display:none!important}
+.muted{color:var(--muted)}
+.small{font-size:12px}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+/* Buttons */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  border:1px solid var(--line-strong);background:#fff;color:var(--ink);
+  padding:11px 17px;border-radius:999px;font-weight:700;font-size:14px;
+  cursor:pointer;transition:transform .12s ease,box-shadow .12s ease,background .12s ease;
+  text-decoration:none
+}
+.btn:hover{box-shadow:var(--shadow-soft);transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn:focus-visible{outline:3px solid rgba(37,99,235,.35);outline-offset:2px}
+.btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent-strong));border-color:transparent;color:#fff}
+.btn.dark{background:var(--navy);border-color:transparent;color:#fff}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--accent)}
+.btn.danger{background:var(--red-soft);border-color:#fecaca;color:var(--red)}
+.btn.small{padding:8px 13px;font-size:12.5px}
+.btn:disabled{opacity:.55;cursor:not-allowed;transform:none;box-shadow:none}
+.icon-btn{
+  border:1px solid var(--line);background:#fff;border-radius:12px;width:42px;height:42px;
+  display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;color:var(--ink)
+}
+.icon-btn:focus-visible{outline:3px solid rgba(37,99,235,.35);outline-offset:2px}
+
+/* Auth */
+.auth-shell{
+  min-height:100vh;display:grid;grid-template-columns:1.05fr .95fr;
+  background:radial-gradient(1100px 620px at 0% 0%,#173b63 0%,var(--navy) 52%,#071528 100%)
+}
+.auth-hero{
+  color:#e6f1f7;padding:clamp(32px,6vw,76px);display:flex;flex-direction:column;
+  justify-content:space-between;gap:40px;position:relative;overflow:hidden
+}
+.auth-hero::after{
+  content:"";position:absolute;right:-150px;bottom:-190px;width:470px;height:470px;border-radius:50%;
+  border:1px solid rgba(96,165,250,.25);
+  box-shadow:0 0 0 60px rgba(96,165,250,.05),0 0 0 120px rgba(96,165,250,.03)
+}
+.brand-mark{display:flex;align-items:center;gap:12px;font-weight:800;font-size:18px;letter-spacing:.02em}
+.brand-logo{
+  width:42px;height:42px;border-radius:13px;display:grid;place-items:center;
+  background:linear-gradient(135deg,#60a5fa,#2563eb);color:#06213f;font-weight:900;
+  box-shadow:0 10px 24px rgba(37,99,235,.35)
+}
+.brand-mark small{display:block;font-weight:500;font-size:11.5px;color:#9fc3d8;letter-spacing:.08em;text-transform:uppercase;margin-top:2px}
+.hero-copy{max-width:580px;position:relative;z-index:1}
+.eyebrow{
+  display:inline-flex;align-items:center;gap:8px;font-size:11.5px;font-weight:750;
+  letter-spacing:.14em;text-transform:uppercase;color:#93c5fd;
+  border:1px solid rgba(147,197,253,.35);padding:7px 12px;border-radius:999px;margin-bottom:22px
+}
+.hero-copy h1{font-size:clamp(34px,4.4vw,56px);line-height:1.04;letter-spacing:-.035em}
+.hero-copy h1 span{color:#bfdbfe}
+.hero-copy p{margin-top:20px;font-size:16px;color:#b6d0e0;max-width:520px}
+.hero-points{display:grid;gap:13px;margin-top:32px}
+.hero-point{display:flex;gap:12px;align-items:flex-start;font-size:14px;color:#d7e8f2}
+.hero-point b{display:block;font-size:13.5px;color:#fff}
+.hero-point span{color:#9fc3d8;font-size:12.5px}
+.point-icon{
+  width:30px;height:30px;border-radius:9px;background:rgba(37,99,235,.18);
+  border:1px solid rgba(147,197,253,.3);display:grid;place-items:center;color:#bfdbfe;
+  font-size:14px;flex-shrink:0;margin-top:1px
+}
+.auth-foot{font-size:12px;color:#8fb1c7;display:flex;gap:18px;flex-wrap:wrap;position:relative;z-index:1}
+.auth-foot a{color:#b6d0e0;text-decoration:none;border-bottom:1px dashed rgba(182,208,224,.4)}
+.auth-panel{
+  display:flex;align-items:center;justify-content:center;padding:clamp(22px,4vw,56px);
+  background:linear-gradient(180deg,#f7fafc,#eef4f8)
+}
+.auth-card{
+  width:100%;max-width:470px;background:var(--card);border:1px solid var(--line);
+  border-radius:26px;padding:clamp(24px,3vw,38px);box-shadow:var(--shadow)
+}
+.auth-card h2{font-size:27px;letter-spacing:-.03em}
+.auth-card .lede{color:var(--muted);font-size:13.5px;margin-top:8px}
+.auth-form{display:grid;gap:14px;margin-top:24px}
+.auth-note{font-size:12px;color:var(--muted);text-align:center;margin-top:16px;line-height:1.55}
+
+/* Forms */
+.field{display:grid;gap:6px}
+.field label,.field-label{font-size:12.5px;font-weight:700;color:#334b61;letter-spacing:.01em}
+.field .hint{font-size:11.5px;color:var(--muted)}
+input[type=text],input[type=email],input[type=tel],input[type=password],input[type=search],input[type=date],select,textarea{
+  width:100%;border:1px solid var(--line-strong);border-radius:11px;padding:11px 13px;
+  background:#fbfdff;color:var(--ink);font:inherit;font-size:14px;transition:border-color .12s,box-shadow .12s
+}
+input:focus,select:focus,textarea:focus{
+  outline:0;border-color:var(--accent-strong);box-shadow:0 0 0 3px rgba(37,99,235,.14);background:#fff
+}
+textarea{min-height:110px;resize:vertical}
+.form-message{
+  padding:11px 13px;border-radius:11px;font-size:12.5px;line-height:1.45;
+  background:var(--accent-soft);color:#1e3a8a;border:1px solid #bfdbfe
+}
+.form-message.error{background:var(--red-soft);color:#7f1d1d;border-color:#fecaca}
+.form-message.success{background:var(--green-soft);color:#14532d;border-color:#bbf7d0}
+.form-message.warning{background:var(--amber-soft);color:#78350f;border-color:#fde68a}
+.form-message.info{background:var(--accent-soft);color:#1e3a8a;border-color:#bfdbfe}
+.form-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:4px}
+
+/* App shell */
+.app{min-height:100vh;display:flex;background:var(--sand)}
+.sidebar{
+  width:280px;flex-shrink:0;background:linear-gradient(180deg,var(--navy),#0a1b2d);
+  color:#dbeafe;padding:24px 16px;display:flex;flex-direction:column;gap:22px;
+  position:sticky;top:0;height:100vh;z-index:700;overflow-y:auto
+}
+.sidebar .brand-mark{padding:2px 8px;color:#fff}
+.sidebar .brand-mark small{color:#8fb1c7}
+.nav{display:grid;gap:6px}
+.nav-btn{
+  display:flex;align-items:center;gap:11px;width:100%;border:0;background:transparent;
+  color:#b9cee0;text-align:left;padding:11px 12px;border-radius:11px;cursor:pointer;
+  font-weight:600;font-size:13.5px;transition:background .12s,color .12s
+}
+.nav-btn:hover{background:rgba(255,255,255,.06);color:#fff}
+.nav-btn.active{background:rgba(37,99,235,.22);color:#fff;box-shadow:inset 3px 0 0 #60a5fa}
+.nav-btn:focus-visible{outline:2px solid #93c5fd;outline-offset:2px}
+.nav-icon{width:22px;text-align:center;font-size:15px;opacity:.95}
+.sidebar-spacer{flex:1}
+.side-user{border-top:1px solid rgba(255,255,255,.1);padding-top:16px;display:grid;gap:10px}
+.side-user .who{display:flex;align-items:center;gap:10px;min-width:0}
+.avatar{
+  width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,#60a5fa,#2563eb);
+  display:grid;place-items:center;color:#04242a;font-weight:800;font-size:13px;flex-shrink:0
+}
+.who-name{font-size:13px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.who-role{font-size:11px;color:#8fb1c7;text-transform:capitalize}
+.side-note{font-size:10.5px;color:#7694aa;line-height:1.5;padding:0 4px}
+.side-user .btn{width:100%;justify-content:flex-start;background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.14);color:#dbeafe}
+.app-main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{
+  display:flex;align-items:center;gap:14px;padding:18px clamp(16px,3vw,34px);
+  background:rgba(243,246,250,.92);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);position:sticky;top:0;z-index:500
+}
+.topbar .titles{min-width:0}
+.topbar h1{font-size:21px;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar .sub{font-size:12px;color:var(--muted);margin-top:2px}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.role-badge{
+  display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:750;
+  background:#fff;border:1px solid var(--line);border-radius:999px;padding:7px 11px;color:#334b61
+}
+.role-badge .dot{width:8px;height:8px;border-radius:50%;background:var(--accent-strong)}
+.menu-toggle{display:none}
+.content{padding:clamp(16px,3vw,34px);display:grid;gap:20px;max-width:1560px;width:100%;margin:0 auto}
+#global-message{margin:0 clamp(16px,3vw,34px) 0}
+.view{display:grid;gap:20px}
+.panel{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:clamp(16px,2.2vw,24px);box-shadow:var(--shadow-soft)
+}
+.panel-head{display:flex;align-items:center;gap:14px;justify-content:space-between;flex-wrap:wrap;margin-bottom:14px}
+.panel h2{font-size:18px}
+.panel h3{font-size:15px}
+.panel p{color:var(--muted);font-size:13px}
+.panel.historical{border-style:dashed;background:#fbfcfe}
+.panel.historical h2{color:#475569}
+.historical-badge{
+  display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:750;
+  background:#e2e8f0;color:#475569;border-radius:999px;padding:5px 9px
+}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px}
+.metric{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:18px;box-shadow:var(--shadow-soft);display:grid;gap:8px;text-align:left
+}
+.metric .metric-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.metric .metric-label{font-size:12px;font-weight:750;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.metric .metric-icon{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);font-size:15px}
+.metric .metric-value{font-size:34px;font-weight:800;letter-spacing:-.04em;line-height:1}
+.metric .metric-hint{font-size:11.5px;color:var(--muted);line-height:1.4}
+.metric.amber .metric-icon{background:var(--amber-soft);color:var(--amber)}
+.metric.green .metric-icon{background:var(--green-soft);color:var(--green)}
+.metric.violet .metric-icon{background:var(--violet-soft);color:var(--violet)}
+.metric.red .metric-icon{background:var(--red-soft);color:var(--red)}
+.metric.slate .metric-icon{background:var(--slate-soft);color:#475569}
+
+/* Filters */
+.filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;align-items:end}
+.filters .field{gap:4px}
+.filters label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.filters .search-field{grid-column:span 2}
+.filters .actions{display:flex;gap:8px;align-items:end}
+
+/* Tables and lists */
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:#fff}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:720px}
+th,td{text-align:left;padding:11px 13px;border-bottom:1px solid #edf2f7;vertical-align:top}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);background:#f8fafc;position:sticky;top:0}
+tr:last-child td{border-bottom:0}
+td.wrap{overflow-wrap:anywhere}
+.table-link{color:var(--accent);font-weight:700;text-decoration:none;background:none;border:0;padding:0;cursor:pointer;font-size:13px}
+.table-link:hover{text-decoration:underline}
+.issue-list{display:grid;gap:10px;margin-top:16px}
+.issue-row{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;
+  border:1px solid var(--line);border-radius:14px;padding:14px 16px;background:#fbfdff;
+  transition:border-color .12s,box-shadow .12s
+}
+.issue-row:hover{border-color:var(--line-strong);box-shadow:var(--shadow-soft)}
+.issue-main{min-width:0;display:grid;gap:5px}
+.issue-title{font-weight:750;font-size:14px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.issue-meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:11.5px;color:var(--muted)}
+.issue-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.chip{
+  display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:5px 9px;
+  font-size:11px;font-weight:750;border:1px solid transparent;white-space:nowrap
+}
+.chip.status-reported{background:var(--accent-soft);color:#1e40af}
+.chip.status-acknowledged{background:var(--amber-soft);color:#92400e}
+.chip.status-in_progress{background:var(--violet-soft);color:#5b21b6}
+.chip.status-resolved{background:var(--green-soft);color:#166534}
+.chip.status-rejected{background:var(--red-soft);color:#991b1b}
+.chip.status-duplicate{background:var(--slate-soft);color:#475569}
+.chip.status-unknown{background:var(--slate-soft);color:#475569}
+.chip.priority-low{background:var(--slate-soft);color:#475569}
+.chip.priority-medium{background:var(--accent-soft);color:#1e40af}
+.chip.priority-high{background:var(--amber-soft);color:#92400e}
+.chip.priority-critical{background:var(--red-soft);color:#991b1b}
+.chip.routing-assigned{background:var(--green-soft);color:#166534}
+.chip.routing-unassigned_review{background:var(--amber-soft);color:#92400e}
+.chip.routing-unassigned_no_mapping{background:var(--slate-soft);color:#475569}
+.chip.routing-unknown{background:var(--slate-soft);color:#475569}
+.chip.ai-review{background:var(--violet-soft);color:#5b21b6}
+.chip.mode-automatic{background:var(--green-soft);color:#166534}
+.chip.mode-manual_review{background:var(--amber-soft);color:#92400e}
+.chip.mode-disabled{background:var(--red-soft);color:#991b1b}
+.chip.mode-unknown{background:var(--slate-soft);color:#475569}
+.empty{
+  border:1px dashed var(--line-strong);border-radius:14px;padding:26px;text-align:center;
+  background:#fbfdff;display:grid;gap:6px
+}
+.empty h3{font-size:15px;color:var(--ink)}
+.empty p{font-size:12.5px;color:var(--muted);max-width:560px;margin:0 auto}
+
+/* Charts */
+.chart{display:grid;gap:10px;margin-top:8px}
+.chart-row{display:grid;grid-template-columns:minmax(110px,180px) minmax(0,1fr) 52px;gap:10px;align-items:center;font-size:12.5px}
+.chart-label{color:#334b61;font-weight:650;overflow-wrap:anywhere}
+.chart-track{height:12px;border-radius:999px;background:#e8eef5;overflow:hidden}
+.chart-bar{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--accent),var(--accent-strong))}
+.chart-value{text-align:right;font-weight:750;color:var(--ink)}
+.chart-bar.historical{background:linear-gradient(90deg,#64748b,#94a3b8)}
+
+/* Detail */
+.detail-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.detail-head{display:flex;align-items:flex-start;gap:16px;justify-content:space-between;flex-wrap:wrap}
+.detail-head .titles{min-width:0;display:grid;gap:6px}
+.detail-head h2{font-size:clamp(20px,2.4vw,28px);letter-spacing:-.03em}
+.detail-head .ticket{font-size:12px;font-weight:750;color:var(--muted);letter-spacing:.04em}
+.detail-chips{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.detail-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(300px,.9fr);gap:18px;align-items:start}
+.detail-stack{display:grid;gap:18px}
+.kv-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px 18px}
+.kv{display:grid;gap:3px;border-bottom:1px solid #edf2f7;padding-bottom:8px;min-width:0}
+.kv-label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:750}
+.kv-value{font-size:13px;color:var(--ink);overflow-wrap:anywhere}
+.kv-value.pre{white-space:pre-wrap;line-height:1.5}
+.reason-list{margin:0;padding-left:18px;display:grid;gap:5px;font-size:13px;color:var(--ink)}
+.map-canvas{height:320px;border-radius:14px;border:1px solid var(--line);background:#e8eff5;overflow:hidden}
+.coords{font-size:12px;color:var(--muted);margin-top:8px}
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;margin-top:12px}
+.evidence{
+  border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#fbfdff;
+  display:grid;grid-template-rows:150px auto
+}
+.evidence .thumb{background:#e8eff5;display:grid;place-items:center;overflow:hidden}
+.evidence .thumb img{width:100%;height:100%;object-fit:cover}
+.evidence .thumb .loading{font-size:11.5px;color:var(--muted);padding:10px;text-align:center}
+.evidence figcaption{padding:9px 11px;display:grid;gap:2px;font-size:11px;color:var(--muted)}
+.evidence figcaption b{font-size:11.5px;color:var(--ink)}
+.timeline{display:grid;gap:0;margin-top:12px}
+.timeline-item{display:grid;grid-template-columns:14px minmax(0,1fr);gap:12px;position:relative;padding-bottom:18px}
+.timeline-item:last-child{padding-bottom:0}
+.timeline-dot{
+  width:12px;height:12px;border-radius:50%;background:var(--accent-strong);margin-top:5px;
+  box-shadow:0 0 0 4px rgba(37,99,235,.12);z-index:1
+}
+.timeline-item:not(:last-child)::before{
+  content:"";position:absolute;left:5px;top:17px;bottom:0;width:2px;background:var(--line)
+}
+.timeline-body{display:grid;gap:4px;min-width:0}
+.timeline-top{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.timeline-comment{font-size:13px;color:var(--ink);white-space:pre-wrap;overflow-wrap:anywhere}
+.timeline-meta{font-size:11.5px;color:var(--muted)}
+.action-panel{display:grid;gap:12px}
+.action-panel .note{font-size:12.5px;color:var(--muted);line-height:1.5}
+.route-form{display:grid;gap:12px}
+.route-form .row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:10px;align-items:start}
+.notice{
+  border:1px solid #fde68a;background:var(--amber-soft);color:#78350f;border-radius:12px;
+  padding:11px 13px;font-size:12.5px;line-height:1.5
+}
+.notice.info{border-color:#bfdbfe;background:var(--accent-soft);color:#1e3a8a}
+.notice.success{border-color:#bbf7d0;background:var(--green-soft);color:#14532d}
+.notice.error{border-color:#fecaca;background:var(--red-soft);color:#7f1d1d}
+.candidate-list{display:grid;gap:10px;margin-top:12px}
+.candidate{
+  border:1px solid var(--line);border-radius:14px;padding:13px 15px;background:#fbfdff;
+  display:grid;gap:7px
+}
+.candidate.selectable{border-color:#bfdbfe;background:#f8fbff}
+.candidate-head{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+.candidate-name{font-weight:750;font-size:13.5px;color:var(--ink)}
+.candidate-meta{font-size:11.5px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap}
+.candidate-blocked{font-size:12px;color:var(--red);line-height:1.45}
+.radio-line{display:flex;gap:9px;align-items:flex-start;font-size:12.5px;color:#334b61}
+.radio-line input{margin-top:3px}
+details.audit-state{border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:#fbfdff}
+details.audit-state summary{cursor:pointer;font-size:11.5px;font-weight:700;color:#334b61}
+details.audit-state pre{margin:8px 0 0;font-size:11.5px;white-space:pre-wrap;overflow-wrap:anywhere;color:#334b61}
+.pagination{display:flex;gap:10px;align-items:center;justify-content:flex-end;flex-wrap:wrap;margin-top:12px;font-size:12px;color:var(--muted)}
+
+/* Profile */
+.profile-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px}
+.profile-card{display:grid;gap:14px}
+.profile-avatar{
+  width:64px;height:64px;border-radius:18px;background:linear-gradient(135deg,#60a5fa,#2563eb);
+  display:grid;place-items:center;color:#04242a;font-weight:900;font-size:22px
+}
+.profile-card h2{font-size:20px}
+.profile-card .email{font-size:12.5px;color:var(--muted);overflow-wrap:anywhere}
+.section-note{font-size:12px;color:var(--muted);line-height:1.55}
+
+/* Responsive */
+@media (max-width:1180px){
+  .detail-grid{grid-template-columns:1fr}
+  .filters .search-field{grid-column:span 1}
+}
+@media (max-width:900px){
+  .auth-shell{grid-template-columns:1fr}
+  .auth-hero{min-height:auto;padding-bottom:34px}
+  .auth-hero .hero-points{display:none}
+  .auth-panel{padding-top:0}
+  .sidebar{
+    position:fixed;left:0;top:0;bottom:0;transform:translateX(-105%);
+    transition:transform .18s ease;box-shadow:0 0 40px rgba(0,0,0,.3)
+  }
+  .sidebar.open{transform:translateX(0)}
+  .menu-toggle{display:inline-flex}
+}
+@media (max-width:640px){
+  .content{padding:14px}
+  .metrics{grid-template-columns:1fr 1fr}
+  .metric .metric-value{font-size:28px}
+  .issue-row{grid-template-columns:1fr}
+  .issue-actions{justify-content:flex-start}
+  .filters{grid-template-columns:1fr}
+  .route-form .row{grid-template-columns:1fr}
+  .chart-row{grid-template-columns:minmax(90px,1fr) minmax(0,1fr) 44px}
+  .topbar h1{font-size:18px}
+}
+</style>
+</head>
+<body>
+
+<div id="auth-shell" class="auth-shell">
+  <section class="auth-hero">
+    <div class="brand-mark">
+      <span class="brand-logo" aria-hidden="true">U</span>
+      <div>UIMRS<small>Administration</small></div>
+    </div>
+    <div class="hero-copy">
+      <span class="eyebrow">Oversight workspace</span>
+      <h1>Verified jurisdiction decisions with <span>a complete audit trail.</span></h1>
+      <p>Sign in with an authorised administrator account. This workspace exposes live operations, the manual jurisdiction review queue, officer management, the verified department directory and immutable administrative audit history.</p>
+      <div class="hero-points">
+        <div class="hero-point"><span class="point-icon" aria-hidden="true">1</span><div><b>Live and historical data separated</b><span>Imported Bengaluru source records never enter live operational counts.</span></div></div>
+        <div class="hero-point"><span class="point-icon" aria-hidden="true">2</span><div><b>Verified routing only</b><span>City, category, active status, routing mode and provenance are checked by the backend.</span></div></div>
+        <div class="hero-point"><span class="point-icon" aria-hidden="true">3</span><div><b>Append-only audit</b><span>Every administrative decision records the authenticated actor and its reason.</span></div></div>
+      </div>
+    </div>
+    <div class="auth-foot">
+      <span>UIMRS administrator portal</span>
+      <a href="/">Historical dashboard</a>
+      <a href="/citizen">Citizen portal</a>
+      <a href="/officer">Officer portal</a>
+    </div>
+  </section>
+  <section class="auth-panel">
+    <div class="auth-card">
+      <span class="eyebrow" style="color:#1d4ed8;border-color:#bfdbfe;background:#eff6ff">Authorised administrators</span>
+      <h2>Administrator sign in</h2>
+      <p class="lede">Use an existing UIMRS account whose database role is administrator. Public registration cannot create administrator accounts.</p>
+      <form id="login-form" class="auth-form" autocomplete="on">
+        <div class="field">
+          <label for="login-email">Administrator e-mail</label>
+          <input id="login-email" name="email" type="email" autocomplete="username" placeholder="administrator@uimrs.gov.in" required>
+        </div>
+        <div class="field">
+          <label for="login-password">Password</label>
+          <input id="login-password" name="password" type="password" autocomplete="current-password" placeholder="Enter your password" required>
+        </div>
+        <button id="login-submit" class="btn primary" type="submit">Sign in securely</button>
+      </form>
+      <div id="login-message" class="form-message error hidden" role="alert" aria-live="polite"></div>
+      <p class="auth-note">This workspace is restricted to administrators. Citizens should use the <a href="/citizen">citizen portal</a> and municipal officers should use the <a href="/officer">officer portal</a>.</p>
+    </div>
+  </section>
+</div>
+
+<div id="app-shell" class="app hidden">
+  <aside id="sidebar" class="sidebar">
+    <div class="brand-mark">
+      <span class="brand-logo" aria-hidden="true">U</span>
+      <div>UIMRS<small>Administration</small></div>
+    </div>
+    <nav class="nav" aria-label="Administrator workspace">
+      <button type="button" class="nav-btn active" data-view="dashboard"><span class="nav-icon" aria-hidden="true">▦</span>System overview</button>
+      <button type="button" class="nav-btn" data-view="issues"><span class="nav-icon" aria-hidden="true">☰</span>Live complaint management</button>
+      <button type="button" class="nav-btn" data-view="review"><span class="nav-icon" aria-hidden="true">⚖</span>Manual jurisdiction review</button>
+      <button type="button" class="nav-btn" data-view="officers"><span class="nav-icon" aria-hidden="true">◉</span>Officer management</button>
+      <button type="button" class="nav-btn" data-view="directory"><span class="nav-icon" aria-hidden="true">▤</span>Verified department directory</button>
+      <button type="button" class="nav-btn" data-view="audit"><span class="nav-icon" aria-hidden="true">▥</span>Administrative audit log</button>
+      <button type="button" class="nav-btn" data-view="profile"><span class="nav-icon" aria-hidden="true">◈</span>Profile</button>
+    </nav>
+    <div class="sidebar-spacer"></div>
+    <div class="side-user">
+      <div class="who">
+        <span id="side-avatar" class="avatar" aria-hidden="true">—</span>
+        <div style="min-width:0">
+          <div id="side-name" class="who-name">Loading administrator…</div>
+          <div id="side-role" class="who-role">Administrator</div>
+        </div>
+      </div>
+      <button id="profile-button" type="button" class="btn small"><span aria-hidden="true">◈</span>Profile</button>
+      <button id="logout-button" type="button" class="btn small"><span aria-hidden="true">⇥</span>Log out</button>
+      <p class="side-note">Session token is held in sessionStorage for this tab only. Signing out clears it and all cached portal data.</p>
+    </div>
+  </aside>
+
+  <main class="app-main">
+    <header class="topbar">
+      <button id="menu-toggle" class="icon-btn menu-toggle" type="button" aria-label="Open navigation">☰</button>
+      <div class="titles">
+        <h1 id="view-title">System overview</h1>
+        <p id="view-subtitle" class="sub">Live operational counts from the UIMRS backend.</p>
+      </div>
+      <div class="topbar-right">
+        <span id="user-badge" class="role-badge"><span class="dot"></span>Administrator</span>
+      </div>
+    </header>
+
+    <div id="global-message" class="form-message info hidden" role="status" aria-live="polite"></div>
+
+    <div class="content">
+      <section id="view-dashboard" class="view">
+        <section class="panel">
+          <div class="panel-head">
+            <div><h2>Operational filters</h2><p>Filters are applied by the backend to live operational queries.</p></div>
+            <button id="refresh-dashboard" type="button" class="btn small">Refresh overview</button>
+          </div>
+          <div class="filters">
+            <div class="field">
+              <label for="dashboard-city">City</label>
+              <select id="dashboard-city"><option value="">All live cities</option></select>
+            </div>
+            <div class="field">
+              <label for="dashboard-department">Department</label>
+              <select id="dashboard-department"><option value="">All departments</option></select>
+            </div>
+            <div class="actions">
+              <button id="apply-dashboard-filters" type="button" class="btn small primary">Apply</button>
+              <button id="clear-dashboard-filters" type="button" class="btn small ghost">Clear</button>
+            </div>
+          </div>
+        </section>
+        <div id="dashboard-cards" class="metrics"></div>
+        <section class="panel">
+          <div class="panel-head"><div><h2>Status distribution</h2><p>Live complaint counts by workflow status.</p></div></div>
+          <div id="dashboard-status-chart" class="chart"></div>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><div><h2>Department-wise workload</h2><p>Live complaints currently routed to each department.</p></div></div>
+          <div id="dashboard-workload"></div>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><div><h2>City-wise live distribution</h2><p>Live complaints grouped by their canonical city.</p></div></div>
+          <div id="dashboard-cities"></div>
+        </section>
+        <section class="panel historical">
+          <div class="panel-head">
+            <div><h2>Historical source archive</h2><p>Imported source records. These are never added to live counts and are never routed.</p></div>
+            <span class="historical-badge">Historical only</span>
+          </div>
+          <div id="dashboard-historical"></div>
+        </section>
+      </section>
+
+      <section id="view-issues" class="view hidden">
+        <section class="panel">
+          <div class="panel-head">
+            <div><h2>Live complaint management</h2><p>Inspect live and historical complaints with their processing history.</p></div>
+            <button id="refresh-issues" type="button" class="btn small">Refresh</button>
+          </div>
+          <div class="filters">
+            <div class="field">
+              <label for="issues-scope">Record scope</label>
+              <select id="issues-scope">
+                <option value="live">Live operations</option>
+                <option value="historical">Historical archive</option>
+                <option value="all">All records</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="issues-status">Status</label>
+              <select id="issues-status">
+                <option value="">All statuses</option>
+                <option value="reported">Reported</option>
+                <option value="acknowledged">Acknowledged</option>
+                <option value="in_progress">In progress</option>
+                <option value="resolved">Resolved</option>
+                <option value="rejected">Rejected</option>
+                <option value="duplicate">Duplicate</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="issues-category">Category</label>
+              <select id="issues-category">
+                <option value="">All categories</option>
+                <option value="Road_Damage">Road damage</option>
+                <option value="Garbage_Waste">Garbage &amp; waste</option>
+                <option value="Streetlight">Streetlight</option>
+                <option value="Water_Supply">Water supply</option>
+                <option value="Drainage_Sewage">Drainage &amp; sewage</option>
+                <option value="Traffic_Signal">Traffic signal</option>
+                <option value="Traffic_Management">Traffic management</option>
+                <option value="Trees_Environment">Trees &amp; environment</option>
+                <option value="Illegal_Construction">Illegal construction</option>
+                <option value="Public_Property_Damage">Public property damage</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="issues-priority">Priority</label>
+              <select id="issues-priority">
+                <option value="">All priorities</option>
+                <option value="Low">Low</option>
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
+                <option value="Critical">Critical</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="issues-city">City</label>
+              <select id="issues-city"><option value="">All cities</option></select>
+            </div>
+            <div class="field">
+              <label for="issues-department">Department</label>
+              <select id="issues-department"><option value="">All departments</option></select>
+            </div>
+            <div class="field">
+              <label for="issues-routing">Routing status</label>
+              <select id="issues-routing">
+                <option value="">All routing states</option>
+                <option value="assigned">Assigned</option>
+                <option value="unassigned_review">Awaiting review</option>
+                <option value="unassigned_no_mapping">No mapping</option>
+              </select>
+            </div>
+            <div class="field search-field">
+              <label for="issues-search">Search</label>
+              <input id="issues-search" type="search" placeholder="Ticket, title or description" autocomplete="off">
+            </div>
+            <div class="actions">
+              <button id="apply-issues-filters" type="button" class="btn small primary">Apply</button>
+              <button id="clear-issues-filters" type="button" class="btn small ghost">Clear</button>
+            </div>
+          </div>
+          <div id="issues-status-message" class="form-message info hidden" role="status" aria-live="polite"></div>
+          <div id="issues-list" class="issue-list"></div>
+        </section>
+      </section>
+
+      <section id="view-issue-detail" class="view hidden">
+        <div class="detail-toolbar">
+          <button id="back-to-issues" type="button" class="btn small">← Back to complaints</button>
+        </div>
+        <div id="issue-detail-content"></div>
+      </section>
+
+      <section id="view-review" class="view hidden">
+        <section class="panel">
+          <div class="panel-head">
+            <div><h2>Manual jurisdiction review</h2><p>Live complaints that need a documented administrative routing decision.</p></div>
+            <button id="refresh-review" type="button" class="btn small">Refresh queue</button>
+          </div>
+          <div class="filters">
+            <div class="field">
+              <label for="review-city">City</label>
+              <select id="review-city"><option value="">All cities</option></select>
+            </div>
+            <div class="field">
+              <label for="review-category">Category</label>
+              <select id="review-category">
+                <option value="">All categories</option>
+                <option value="Road_Damage">Road damage</option>
+                <option value="Garbage_Waste">Garbage &amp; waste</option>
+                <option value="Streetlight">Streetlight</option>
+                <option value="Water_Supply">Water supply</option>
+                <option value="Drainage_Sewage">Drainage &amp; sewage</option>
+                <option value="Traffic_Signal">Traffic signal</option>
+                <option value="Traffic_Management">Traffic management</option>
+                <option value="Trees_Environment">Trees &amp; environment</option>
+                <option value="Illegal_Construction">Illegal construction</option>
+                <option value="Public_Property_Damage">Public property damage</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="review-priority">Priority</label>
+              <select id="review-priority">
+                <option value="">All priorities</option>
+                <option value="Low">Low</option>
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
+                <option value="Critical">Critical</option>
+              </select>
+            </div>
+            <div class="actions">
+              <button id="apply-review-filters" type="button" class="btn small primary">Apply</button>
+              <button id="clear-review-filters" type="button" class="btn small ghost">Clear</button>
+            </div>
+          </div>
+          <div id="review-status-message" class="form-message info hidden" role="status" aria-live="polite"></div>
+          <div id="review-list" class="issue-list"></div>
+        </section>
+      </section>
+
+      <section id="view-review-detail" class="view hidden">
+        <div class="detail-toolbar">
+          <button id="back-to-review" type="button" class="btn small">← Back to review queue</button>
+        </div>
+        <div id="review-detail-content"></div>
+      </section>
+
+      <section id="view-officers" class="view hidden">
+        <section class="panel">
+          <div class="panel-head">
+            <div><h2>Officer management</h2><p>Provision authorised officer accounts and reassign them to verified departments.</p></div>
+            <button id="refresh-officers" type="button" class="btn small">Refresh</button>
+          </div>
+          <div id="officer-status-message" class="form-message info hidden" role="status" aria-live="polite"></div>
+          <div id="officers-table"></div>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><div><h2>Provision a new officer</h2><p>Only the OFFICER role can be created here. Existing users are never modified.</p></div></div>
+          <form id="officer-create-form" class="route-form">
+            <div class="row">
+              <div class="field"><label for="officer-name">Full name</label><input id="officer-name" type="text" required maxlength="120" autocomplete="off"></div>
+              <div class="field"><label for="officer-email">Official e-mail</label><input id="officer-email" type="email" required autocomplete="off"></div>
+            </div>
+            <div class="row">
+              <div class="field"><label for="officer-phone">Official phone (optional)</label><input id="officer-phone" type="tel" maxlength="20" autocomplete="off"></div>
+              <div class="field"><label for="officer-password">Initial password</label><input id="officer-password" type="password" required minlength="8" autocomplete="new-password"></div>
+            </div>
+            <div class="row">
+              <div class="field"><label for="officer-department">Verified active department</label><select id="officer-department" required><option value="">Select a department</option></select></div>
+              <div class="field"><label for="officer-language">Preferred language</label><input id="officer-language" type="text" value="en" maxlength="10"></div>
+            </div>
+            <div class="form-actions"><button id="officer-create-submit" class="btn primary" type="submit">Create officer account</button></div>
+            <div id="officer-create-message" class="form-message info hidden" role="status" aria-live="polite"></div>
+          </form>
+          <p class="section-note">Officer activation/deactivation is intentionally not implemented in this task. The existing authentication architecture has no controlled active-account flag, so no unsafe partial deactivation workflow is exposed.</p>
+        </section>
+      </section>
+
+      <section id="view-directory" class="view hidden">
+        <section class="panel">
+          <div class="panel-head">
+            <div><h2>Verified department directory</h2><p>Read-only official source records. No edit or routing-mode change is exposed.</p></div>
+            <button id="refresh-directory" type="button" class="btn small">Refresh</button>
+          </div>
+          <div class="filters">
+            <div class="field">
+              <label for="directory-city">City</label>
+              <select id="directory-city"><option value="">All cities</option></select>
+            </div>
+            <div class="field">
+              <label for="directory-category">Category</label>
+              <select id="directory-category">
+                <option value="">All categories</option>
+                <option value="Road_Damage">Road damage</option>
+                <option value="Garbage_Waste">Garbage &amp; waste</option>
+                <option value="Streetlight">Streetlight</option>
+                <option value="Water_Supply">Water supply</option>
+                <option value="Drainage_Sewage">Drainage &amp; sewage</option>
+                <option value="Traffic_Signal">Traffic signal</option>
+                <option value="Traffic_Management">Traffic management</option>
+                <option value="Trees_Environment">Trees &amp; environment</option>
+                <option value="Illegal_Construction">Illegal construction</option>
+                <option value="Public_Property_Damage">Public property damage</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="directory-mode">Routing mode</label>
+              <select id="directory-mode">
+                <option value="">All routing modes</option>
+                <option value="automatic">Automatic</option>
+                <option value="manual_review">Manual review</option>
+                <option value="disabled">Disabled</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="directory-active">Active state</label>
+              <select id="directory-active">
+                <option value="">All records</option>
+                <option value="true">Active only</option>
+                <option value="false">Inactive only</option>
+              </select>
+            </div>
+            <div class="field search-field">
+              <label for="directory-search">Search</label>
+              <input id="directory-search" type="search" placeholder="Agency, department or short name" autocomplete="off">
+            </div>
+            <div class="actions">
+              <button id="apply-directory-filters" type="button" class="btn small primary">Apply</button>
+              <button id="clear-directory-filters" type="button" class="btn small ghost">Clear</button>
+            </div>
+          </div>
+          <div id="directory-status-message" class="form-message info hidden" role="status" aria-live="polite"></div>
+          <div id="directory-table"></div>
+        </section>
+      </section>
+
+      <section id="view-audit" class="view hidden">
+        <section class="panel">
+          <div class="panel-head">
+            <div><h2>Administrative audit log</h2><p>Append-only record of administrative decisions. Entries cannot be edited or deleted through the API.</p></div>
+            <button id="refresh-audit" type="button" class="btn small">Refresh</button>
+          </div>
+          <div class="filters">
+            <div class="field">
+              <label for="audit-action">Action</label>
+              <select id="audit-action">
+                <option value="">All actions</option>
+                <option value="issue.routed">Issue routed</option>
+                <option value="issue.left_unassigned">Issue left unassigned</option>
+                <option value="officer.created">Officer created</option>
+                <option value="officer.department_changed">Officer department changed</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="audit-entity">Entity type</label>
+              <select id="audit-entity">
+                <option value="">All entities</option>
+                <option value="issue">Issue</option>
+                <option value="user">User</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="audit-actor">Actor user ID</label>
+              <input id="audit-actor" type="text" maxlength="36" placeholder="Exact user id" autocomplete="off">
+            </div>
+            <div class="field">
+              <label for="audit-city">City</label>
+              <input id="audit-city" type="text" maxlength="120" placeholder="Exact city" autocomplete="off">
+            </div>
+            <div class="field">
+              <label for="audit-from">From date</label>
+              <input id="audit-from" type="date">
+            </div>
+            <div class="field">
+              <label for="audit-to">To date</label>
+              <input id="audit-to" type="date">
+            </div>
+            <div class="actions">
+              <button id="apply-audit-filters" type="button" class="btn small primary">Apply</button>
+              <button id="clear-audit-filters" type="button" class="btn small ghost">Clear</button>
+            </div>
+          </div>
+          <div id="audit-status-message" class="form-message info hidden" role="status" aria-live="polite"></div>
+          <div id="audit-table"></div>
+          <div id="audit-pagination" class="pagination"></div>
+        </section>
+      </section>
+
+      <section id="view-profile" class="view hidden">
+        <div id="profile-content" class="profile-grid"></div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script>
+"use strict";
+
+const API_PREFIX = "/api/v1";
+const TOKEN_KEY = "uimrs_admin_token";
+const STATUSES = ["reported", "acknowledged", "in_progress", "resolved", "rejected", "duplicate"];
+const STATUS_LABELS = {
+  reported: "Reported",
+  acknowledged: "Acknowledged",
+  in_progress: "In progress",
+  resolved: "Resolved",
+  rejected: "Rejected",
+  duplicate: "Duplicate"
+};
+const ROUTING_LABELS = {
+  assigned: "Assigned",
+  unassigned_review: "Awaiting review",
+  unassigned_no_mapping: "No mapping"
+};
+const VIEW_TITLES = {
+  dashboard: ["System overview", "Live operational counts from the UIMRS backend."],
+  issues: ["Live complaint management", "Inspect live and historical complaints with their processing history."],
+  "issue-detail": ["Complaint detail", "Evidence, AI explanation, routing, department and audit history."],
+  review: ["Manual jurisdiction review", "Live complaints awaiting a documented routing decision."],
+  "review-detail": ["Jurisdiction decision", "Select a verified department or keep the complaint unassigned."],
+  officers: ["Officer management", "Provision officer accounts and maintain verified department assignments."],
+  directory: ["Verified department directory", "Read-only official source records and routing modes."],
+  audit: ["Administrative audit log", "Append-only administrative decision history."],
+  profile: ["Administrator profile", "Your authenticated identity and session."]
+};
+const CATEGORY_LABELS = {
+  Road_Damage: "Road damage",
+  Garbage_Waste: "Garbage & waste",
+  Streetlight: "Streetlight",
+  Water_Supply: "Water supply",
+  Drainage_Sewage: "Drainage & sewage",
+  Traffic_Signal: "Traffic signal",
+  Traffic_Management: "Traffic management",
+  Trees_Environment: "Trees & environment",
+  Illegal_Construction: "Illegal construction",
+  Public_Property_Damage: "Public property damage",
+  Other: "Other"
+};
+
+const state = {
+  token: null,
+  user: null,
+  overview: null,
+  view: "dashboard",
+  departments: [],
+  issues: [],
+  issueDetail: null,
+  reviewQueue: [],
+  reviewDetail: null,
+  officers: [],
+  audit: { items: [], total: 0, skip: 0, limit: 50 },
+  evidenceUrls: [],
+  detailMap: null,
+  searchTimer: null
+};
+
+function byId(id) { return document.getElementById(id); }
+
+function make(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined && text !== null) node.textContent = String(text);
+  return node;
+}
+
+function append(parent) {
+  for (let index = 1; index < arguments.length; index += 1) {
+    const child = arguments[index];
+    if (child !== null && child !== undefined) parent.appendChild(child);
+  }
+  return parent;
+}
+
+function nodeCell(node, className) {
+  const cell = make("td", className || "");
+  if (node !== null && node !== undefined) cell.appendChild(node);
+  return cell;
+}
+
+function clear(node) {
+  if (node) node.replaceChildren();
+}
+
+function setMessage(node, text, kind) {
+  if (!node) return;
+  const value = (text || "").trim();
+  node.textContent = value;
+  node.className = "form-message " + (kind || "info") + (value ? "" : " hidden");
+}
+
+function setGlobalMessage(text, kind) {
+  setMessage(byId("global-message"), text, kind || "info");
+}
+
+function setLoginMessage(text, kind) {
+  setMessage(byId("login-message"), text, kind || "error");
+}
+
+function safeText(value, fallback) {
+  if (value === null || value === undefined || value === "") return fallback || "Not available";
+  return String(value);
+}
+
+function statusLabel(value) {
+  return STATUS_LABELS[String(value)] || "Unknown";
+}
+
+function categoryLabel(value) {
+  return CATEGORY_LABELS[String(value)] || safeText(value, "Unknown");
+}
+
+function statusChip(value) {
+  const key = STATUSES.includes(String(value)) ? String(value) : "unknown";
+  return make("span", "chip status-" + key, statusLabel(key));
+}
+
+function priorityChip(value) {
+  if (!value) return make("span", "chip priority-low", "Priority unavailable");
+  const key = String(value).toLowerCase();
+  return make("span", "chip priority-" + key, value);
+}
+
+function routingChip(value) {
+  const key = ROUTING_LABELS[String(value)] ? String(value) : "unknown";
+  return make("span", "chip routing-" + key, ROUTING_LABELS[key] || "Not recorded");
+}
+
+function modeChip(value) {
+  const key = ["automatic", "manual_review", "disabled"].includes(String(value)) ? String(value) : "unknown";
+  return make("span", "chip mode-" + key, safeText(value, "Not recorded"));
+}
+
+function formatDate(value) {
+  if (!value) return "Not available";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return String(value);
+  return parsed.toLocaleString();
+}
+
+function initials(name) {
+  const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "—";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+}
+
+function kvRow(label, value, pre) {
+  const row = make("div", "kv");
+  append(row, make("span", "kv-label", label));
+  append(row, make("span", pre ? "kv-value pre" : "kv-value", safeText(value)));
+  return row;
+}
+
+function safeHttpUrl(value) {
+  if (!value) return null;
+  try {
+    const url = new URL(String(value), window.location.origin);
+    if (url.protocol === "http:" || url.protocol === "https:") return url.href;
+  } catch (error) {
+    return null;
+  }
+  return null;
+}
+
+function linkNode(value, fallback) {
+  const href = safeHttpUrl(value);
+  if (!href) return make("span", "kv-value", safeText(value, fallback || "Not recorded"));
+  const link = make("a", "kv-value", String(value));
+  link.href = href;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  return link;
+}
+
+function emptyState(title, detail) {
+  const box = make("div", "empty");
+  append(box, make("h3", "", title), make("p", "", detail));
+  return box;
+}
+
+function authHeaders(extra) {
+  const headers = Object.assign({}, extra || {});
+  if (state.token) headers.Authorization = "Bearer " + state.token;
+  return headers;
+}
+
+function errorDetail(data, statusCode) {
+  if (data && typeof data === "object") {
+    if (typeof data.detail === "string") return data.detail;
+    if (Array.isArray(data.detail)) {
+      return data.detail.map(function (item) {
+        return item && item.msg ? item.msg : "Invalid value";
+      }).join("; ");
+    }
+  }
+  return "Request failed (HTTP " + statusCode + ").";
+}
+
+async function api(path, options) {
+  const settings = Object.assign({}, options || {});
+  const headers = authHeaders(settings.headers);
+  if (settings.body && typeof settings.body === "string" && !headers["Content-Type"]) {
+    headers["Content-Type"] = "application/json";
+  }
+  const response = await fetch(API_PREFIX + path, Object.assign({}, settings, { headers: headers }));
+  const text = await response.text();
+  let data = null;
+  if (text) {
+    try { data = JSON.parse(text); } catch (error) { data = text; }
+  }
+  if (!response.ok) {
+    if (response.status === 401) handleAuthExpired();
+    throw new Error(errorDetail(data, response.status));
+  }
+  return data;
+}
+
+function handleAuthExpired() {
+  if (!state.token) return;
+  logout(false);
+  setLoginMessage("Your session has expired. Sign in again.", "error");
+}
+
+function showAuth() {
+  byId("app-shell").classList.add("hidden");
+  byId("auth-shell").classList.remove("hidden");
+}
+
+function showApp() {
+  byId("auth-shell").classList.add("hidden");
+  byId("app-shell").classList.remove("hidden");
+}
+
+function clearEvidenceUrls() {
+  state.evidenceUrls.forEach(function (url) {
+    try { URL.revokeObjectURL(url); } catch (error) { /* ignore */ }
+  });
+  state.evidenceUrls = [];
+}
+
+function clearDetailMap() {
+  if (state.detailMap) {
+    try { state.detailMap.remove(); } catch (error) { /* ignore */ }
+    state.detailMap = null;
+  }
+}
+
+function resetSessionState() {
+  clearEvidenceUrls();
+  clearDetailMap();
+  state.user = null;
+  state.overview = null;
+  state.departments = [];
+  state.issues = [];
+  state.issueDetail = null;
+  state.reviewQueue = [];
+  state.reviewDetail = null;
+  state.officers = [];
+  state.audit = { items: [], total: 0, skip: 0, limit: 50 };
+  state.view = "dashboard";
+}
+
+function logout(showNotice) {
+  state.token = null;
+  resetSessionState();
+  try { window.sessionStorage.removeItem(TOKEN_KEY); } catch (error) { /* ignore */ }
+  byId("login-form").reset();
+  byId("sidebar").classList.remove("open");
+  showAuth();
+  if (showNotice !== false) setLoginMessage("You have been signed out.", "info");
+}
+
+async function login(email, password) {
+  const response = await fetch(API_PREFIX + "/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: email, password: password })
+  });
+  const text = await response.text();
+  let data = null;
+  if (text) {
+    try { data = JSON.parse(text); } catch (error) { data = text; }
+  }
+  if (!response.ok) throw new Error(errorDetail(data, response.status));
+  if (!data || !data.access_token || !data.user) throw new Error("The login response was incomplete.");
+  if (String(data.user.role).toLowerCase() !== "admin") {
+    throw new Error("This portal is restricted to UIMRS administrators. Citizen and officer accounts cannot sign in here.");
+  }
+  state.token = data.access_token;
+  try { window.sessionStorage.setItem(TOKEN_KEY, state.token); } catch (error) { /* ignore */ }
+  try {
+    await loadSession();
+  } catch (error) {
+    logout(false);
+    throw error;
+  }
+}
+
+async function loadSession() {
+  const me = await api("/auth/me");
+  if (String(me.role).toLowerCase() !== "admin") {
+    throw new Error("This portal is restricted to UIMRS administrators.");
+  }
+  state.user = me;
+  await loadDirectoryData();
+  await loadOverview();
+  showApp();
+  renderProfile();
+  navigate("dashboard");
+}
+
+function renderIdentity() {
+  const user = state.user;
+  if (!user) return;
+  byId("side-avatar").textContent = initials(user.name);
+  byId("side-name").textContent = user.name || "Administrator";
+  byId("side-role").textContent = user.role || "admin";
+  byId("user-badge").textContent = "";
+  append(byId("user-badge"), make("span", "dot"), document.createTextNode(user.name || "Administrator"));
+}
+
+function navigate(view) {
+  state.view = view;
+  document.querySelectorAll(".view").forEach(function (section) {
+    section.classList.add("hidden");
+  });
+  const target = byId("view-" + view);
+  if (target) target.classList.remove("hidden");
+  document.querySelectorAll(".nav-btn").forEach(function (button) {
+    button.classList.toggle("active", button.getAttribute("data-view") === view);
+  });
+  byId("sidebar").classList.remove("open");
+  updateTitles();
+  if (view === "dashboard") renderDashboard();
+  if (view === "issues") loadIssues();
+  if (view === "review") loadReviewQueue();
+  if (view === "officers") loadOfficers();
+  if (view === "directory") loadDirectory();
+  if (view === "audit") loadAudit();
+  if (view === "profile") renderProfile();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function updateTitles() {
+  const base = VIEW_TITLES[state.view] || VIEW_TITLES.dashboard;
+  byId("view-title").textContent = base[0];
+  byId("view-subtitle").textContent = base[1];
+}
+
+/* ------------------------------------------------------------------ */
+/* Directory cache and filter options                                 */
+/* ------------------------------------------------------------------ */
+function uniqueCities() {
+  const seen = {};
+  state.departments.forEach(function (department) {
+    if (department.city && !seen[department.city]) seen[department.city] = true;
+  });
+  return Object.keys(seen).sort();
+}
+
+function fillSelect(select, values, placeholder) {
+  if (!select) return;
+  const current = select.value;
+  clear(select);
+  const first = document.createElement("option");
+  first.value = "";
+  first.textContent = placeholder;
+  select.appendChild(first);
+  values.forEach(function (item) {
+    const option = document.createElement("option");
+    option.value = item.value;
+    option.textContent = item.label;
+    select.appendChild(option);
+  });
+  if (current && values.some(function (item) { return item.value === current; })) {
+    select.value = current;
+  }
+}
+
+function departmentOptions(assignableOnly) {
+  return state.departments
+    .filter(function (department) {
+      if (!assignableOnly) return true;
+      return isOfficerAssignable(department);
+    })
+    .map(function (department) {
+      return {
+        value: department.id,
+        label: department.name + " — " + safeText(department.city, "city unavailable") + " (" + safeText(department.handles_category, "category unavailable") + ")"
+      };
+    });
+}
+
+function isOfficerAssignable(department) {
+  const supported = department.city === "Gurugram, Haryana, India" || department.city === "Bengaluru, Karnataka, India";
+  return Boolean(department.is_active && supported);
+}
+
+function populateFilterOptions() {
+  const cities = uniqueCities().map(function (city) { return { value: city, label: city }; });
+  fillSelect(byId("dashboard-city"), cities, "All live cities");
+  fillSelect(byId("issues-city"), cities, "All cities");
+  fillSelect(byId("review-city"), cities, "All cities");
+  fillSelect(byId("directory-city"), cities, "All cities");
+  fillSelect(byId("dashboard-department"), departmentOptions(false), "All departments");
+  fillSelect(byId("issues-department"), departmentOptions(false), "All departments");
+  fillSelect(byId("officer-department"), departmentOptions(true), "Select a verified active department");
+}
+
+async function loadDirectoryData() {
+  try {
+    state.departments = await api("/admin/departments");
+    populateFilterOptions();
+  } catch (error) {
+    state.departments = [];
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Dashboard                                                          */
+/* ------------------------------------------------------------------ */
+async function loadOverview() {
+  const params = new URLSearchParams();
+  const city = byId("dashboard-city").value;
+  const department = byId("dashboard-department").value;
+  if (city) params.set("city", city);
+  if (department) params.set("department_id", department);
+  const suffix = params.toString() ? "?" + params.toString() : "";
+  state.overview = await api("/admin/overview" + suffix);
+  renderIdentity();
+  renderDashboard();
+}
+
+function metricCard(label, value, hint, icon, tone) {
+  const card = make("article", "metric " + (tone || ""));
+  const top = make("div", "metric-top");
+  append(top, make("span", "metric-label", label), make("span", "metric-icon", icon));
+  append(card, top, make("span", "metric-value", String(value)), make("span", "metric-hint", hint));
+  return card;
+}
+
+function renderBarChart(container, rows, historical) {
+  clear(container);
+  if (!rows || !rows.length) {
+    container.appendChild(emptyState("No data", "The backend returned no records for this section."));
+    return;
+  }
+  const max = Math.max.apply(null, rows.map(function (row) { return Number(row.count) || 0; }));
+  const chart = make("div", "chart");
+  rows.forEach(function (row) {
+    const line = make("div", "chart-row");
+    const track = make("div", "chart-track");
+    const bar = make("div", historical ? "chart-bar historical" : "chart-bar");
+    const percent = max > 0 ? Math.round((Number(row.count) / max) * 100) : 0;
+    bar.style.width = Math.max(percent, row.count > 0 ? 2 : 0) + "%";
+    track.appendChild(bar);
+    append(line,
+      make("span", "chart-label", row.label),
+      track,
+      make("span", "chart-value", String(row.count))
+    );
+    chart.appendChild(line);
+  });
+  container.appendChild(chart);
+}
+
+function renderTable(container, columns, rows, emptyTitle, emptyDetail) {
+  clear(container);
+  if (!rows || !rows.length) {
+    container.appendChild(emptyState(emptyTitle, emptyDetail));
+    return;
+  }
+  const wrap = make("div", "table-wrap");
+  const table = make("table");
+  const head = make("thead");
+  const headRow = make("tr");
+  columns.forEach(function (column) {
+    headRow.appendChild(make("th", "", column.label));
+  });
+  head.appendChild(headRow);
+  const body = make("tbody");
+  rows.forEach(function (row) {
+    const tr = make("tr");
+    columns.forEach(function (column) {
+      const td = make("td", column.wrap ? "wrap" : "");
+      const value = column.render ? column.render(row) : row[column.key];
+      if (value instanceof Node) {
+        td.appendChild(value);
+      } else {
+        td.textContent = safeText(value, "Not available");
+      }
+      tr.appendChild(td);
+    });
+    body.appendChild(tr);
+  });
+  append(table, head, body);
+  wrap.appendChild(table);
+  container.appendChild(wrap);
+}
+
+function renderDashboard() {
+  const container = byId("dashboard-cards");
+  clear(container);
+  if (!state.overview || !state.overview.live) {
+    container.appendChild(emptyState("Overview unavailable", "Sign in again to load the operational overview."));
+    return;
+  }
+  const live = state.overview.live;
+  const statuses = live.statuses;
+  append(container,
+    metricCard("Total live complaints", live.total, "Live records only; historical source rows are excluded.", "▦", ""),
+    metricCard("Reported", statuses.reported, "Live complaints still in reported status.", "◷", "blue"),
+    metricCard("Acknowledged", statuses.acknowledged, "Live complaints acknowledged by staff.", "◑", "amber"),
+    metricCard("In progress", statuses.in_progress, "Live complaints currently being worked.", "▶", "violet"),
+    metricCard("Resolved", statuses.resolved, "Live complaints resolved through the workflow.", "●", "green"),
+    metricCard("Rejected", statuses.rejected, "Live complaints rejected after review.", "✕", "red"),
+    metricCard("Assigned", live.assigned, "Live complaints routed to a department.", "◉", "green"),
+    metricCard("Unassigned", live.unassigned, "Live complaints with no department.", "◎", "amber"),
+    metricCard("Awaiting jurisdiction review", live.awaiting_review, "Live unassigned complaints in manual review.", "⚖", "amber"),
+    metricCard("Needs AI classification review", live.needs_ai_review, "Live complaints flagged by the classifier.", "◈", "violet")
+  );
+
+  const statusRows = STATUSES.map(function (status) {
+    return { label: STATUS_LABELS[status], count: statuses[status] || 0 };
+  });
+  renderBarChart(byId("dashboard-status-chart"), statusRows, false);
+
+  renderTable(
+    byId("dashboard-workload"),
+    [
+      { label: "Department", render: function (row) { return safeText(row.name); } },
+      { label: "City", key: "city" },
+      { label: "Category", render: function (row) { return categoryLabel(row.handles_category); } },
+      { label: "Live complaints", key: "count" }
+    ],
+    live.department_workload,
+    "No routed live complaints",
+    "No live complaint is currently routed to a department under the selected filters."
+  );
+
+  const cityRows = live.city_distribution.map(function (row) {
+    return { label: safeText(row.city, "Not recorded"), count: row.count };
+  });
+  renderBarChart(byId("dashboard-cities"), cityRows, false);
+
+  const historical = state.overview.historical;
+  const historicalBox = byId("dashboard-historical");
+  clear(historicalBox);
+  const summary = make("div", "kv-grid");
+  append(summary,
+    kvRow("Historical source records", historical.total),
+    kvRow("Resolution-time averages", state.overview.resolution_timing_available ? "Available" : "Not available")
+  );
+  historicalBox.appendChild(summary);
+  historicalBox.appendChild(make("p", "section-note", historical.note));
+  const agencyRows = (historical.source_agency_distribution || []).map(function (row) {
+    return { label: safeText(row.source_agency, "Not recorded"), count: row.count };
+  });
+  const agencyTitle = make("h3", "", "Historical source-agency distribution");
+  agencyTitle.style.marginTop = "16px";
+  historicalBox.appendChild(agencyTitle);
+  const agencyChart = make("div", "chart");
+  historicalBox.appendChild(agencyChart);
+  renderBarChart(agencyChart, agencyRows, true);
+  const categoryRows = (historical.category_distribution || []).map(function (row) {
+    return { label: categoryLabel(row.category), count: row.count };
+  });
+  const categoryTitle = make("h3", "", "Historical categories");
+  categoryTitle.style.marginTop = "16px";
+  historicalBox.appendChild(categoryTitle);
+  const categoryChart = make("div", "chart");
+  historicalBox.appendChild(categoryChart);
+  renderBarChart(categoryChart, categoryRows, true);
+  const notes = make("ul", "reason-list");
+  (state.overview.notes || []).forEach(function (note) {
+    notes.appendChild(make("li", "", note));
+  });
+  historicalBox.appendChild(notes);
+}
+
+/* ------------------------------------------------------------------ */
+/* Live complaint management                                          */
+/* ------------------------------------------------------------------ */
+function issueChips(issue) {
+  const row = make("div", "issue-meta");
+  append(row, statusChip(issue.status), priorityChip(issue.priority_level), routingChip(issue.routing_status));
+  if (issue.category_needs_review === true) append(row, make("span", "chip ai-review", "AI review"));
+  return row;
+}
+
+function renderIssueList(container, rows, emptyTitle, emptyDetail) {
+  clear(container);
+  if (!rows || !rows.length) {
+    container.appendChild(emptyState(emptyTitle, emptyDetail));
+    return;
+  }
+  const fragment = document.createDocumentFragment();
+  rows.forEach(function (issue) {
+    const row = make("article", "issue-row");
+    const main = make("div", "issue-main");
+    append(main, make("div", "issue-title", safeText(issue.title, "Untitled complaint")));
+    append(main, issueChips(issue));
+    append(main, make("div", "issue-meta",
+      safeText(issue.ticket_number, "Ticket unavailable") + " · " +
+      categoryLabel(issue.category) + " · " +
+      safeText(issue.city, "City not recorded") + " · " +
+      safeText(issue.department_name, "No department") + " · " +
+      formatDate(issue.created_at)
+    ));
+    const actions = make("div", "issue-actions");
+    const open = make("button", "btn small primary", "Open complaint");
+    open.type = "button";
+    open.addEventListener("click", function () { openIssue(issue.id); });
+    append(actions, open);
+    append(row, main, actions);
+    fragment.appendChild(row);
+  });
+  container.appendChild(fragment);
+}
+
+async function loadIssues() {
+  const statusBox = byId("issues-status-message");
+  setMessage(statusBox, "Loading complaints.", "info");
+  const params = new URLSearchParams();
+  params.set("scope", byId("issues-scope").value || "live");
+  params.set("limit", "100");
+  const mapping = [
+    ["status", "issues-status"],
+    ["category", "issues-category"],
+    ["priority", "issues-priority"],
+    ["city", "issues-city"],
+    ["department_id", "issues-department"],
+    ["routing_status", "issues-routing"]
+  ];
+  mapping.forEach(function (pair) {
+    const value = byId(pair[1]).value;
+    if (value) params.set(pair[0], value);
+  });
+  const search = byId("issues-search").value.trim();
+  if (search) params.set("q", search);
+  try {
+    const rows = await api("/admin/issues?" + params.toString());
+    state.issues = rows;
+    setMessage(statusBox, "", "info");
+    renderIssueList(
+      byId("issues-list"),
+      rows,
+      "No complaints in this view",
+      "The backend returned no records matching the selected scope and filters."
+    );
+  } catch (error) {
+    setMessage(statusBox, error.message, "error");
+    byId("issues-list").replaceChildren(emptyState("Could not load complaints", error.message));
+  }
+}
+
+async function openIssue(issueId) {
+  setGlobalMessage("Loading complaint detail.", "info");
+  try {
+    state.issueDetail = await api("/admin/issues/" + encodeURIComponent(issueId));
+    navigate("issue-detail");
+    renderIssueDetail();
+    setGlobalMessage("", "info");
+  } catch (error) {
+    setGlobalMessage(error.message, "error");
+  }
+}
+
+function classificationPanel(issue) {
+  const panel = make("section", "panel");
+  append(panel, make("h2", "", "AI classification and priority"));
+  const grid = make("div", "kv-grid");
+  append(grid,
+    kvRow("Category", categoryLabel(issue.category)),
+    kvRow("Classification source", issue.category_source || "Not available"),
+    kvRow("Score kind", issue.category_score_kind || "Not available"),
+    kvRow("Raw score", issue.category_confidence === null || issue.category_confidence === undefined ? "Not available" : String(issue.category_confidence)),
+    kvRow("Model version", issue.category_model_version || "Not available"),
+    kvRow("Human review required", issue.category_needs_review === null || issue.category_needs_review === undefined ? "Not recorded" : (issue.category_needs_review ? "Yes" : "No")),
+    kvRow("Review reason", issue.category_review_reason || "Not recorded"),
+    kvRow("Priority level", issue.priority_level || "Not available"),
+    kvRow("Priority score", issue.priority_score === null || issue.priority_score === undefined ? "Not available" : String(issue.priority_score))
+  );
+  append(panel, grid);
+  if (Array.isArray(issue.category_top_alternatives) && issue.category_top_alternatives.length) {
+    const wrap = make("div", "kv");
+    append(wrap, make("span", "kv-label", "Model alternatives"));
+    const list = make("ul", "reason-list");
+    issue.category_top_alternatives.forEach(function (item) {
+      list.appendChild(make("li", "", safeText(item && item.category, "Unknown") + " — " + safeText(item && item.model_score, "unavailable")));
+    });
+    append(wrap, list);
+    append(panel, wrap);
+  }
+  if (Array.isArray(issue.priority_reasons) && issue.priority_reasons.length) {
+    const wrap = make("div", "kv");
+    append(wrap, make("span", "kv-label", "Priority reasons"));
+    const list = make("ul", "reason-list");
+    issue.priority_reasons.forEach(function (reason) {
+      list.appendChild(make("li", "", String(reason)));
+    });
+    append(wrap, list);
+    append(panel, wrap);
+  } else {
+    append(panel, make("p", "muted", "No priority reasons were recorded for this complaint."));
+  }
+  return panel;
+}
+
+function routingPanel(issue, department) {
+  const panel = make("section", "panel");
+  append(panel, make("h2", "", "Routing and location"));
+  const grid = make("div", "kv-grid");
+  append(grid,
+    kvRow("Routing status", ROUTING_LABELS[String(issue.routing_status)] || issue.routing_status || "Not recorded"),
+    kvRow("Department", department ? department.name : "Not routed"),
+    kvRow("Department city", department ? department.city : "Not available"),
+    kvRow("Department category", department ? categoryLabel(department.handles_category) : "Not available"),
+    kvRow("Verification source", department ? (department.verification_source_url || "Not recorded") : "Not available"),
+    kvRow("Verification date", department ? (department.verification_date || "Not recorded") : "Not available"),
+    kvRow("Routing mode", department ? (department.routing_mode || "Not recorded") : "Not available"),
+    kvRow("Ticket number", issue.ticket_number || "Not available"),
+    kvRow("Submitted", formatDate(issue.created_at)),
+    kvRow("Last updated", formatDate(issue.updated_at)),
+    kvRow("Resolved at", issue.resolved_at ? formatDate(issue.resolved_at) : "Not resolved"),
+    kvRow("City", issue.city || "Not recorded"),
+    kvRow("Address", issue.address_text || "Not recorded"),
+    kvRow("Coordinates", safeText(issue.latitude) + ", " + safeText(issue.longitude)),
+    kvRow("Duplicate count", issue.duplicate_count === null || issue.duplicate_count === undefined ? "0" : String(issue.duplicate_count))
+  );
+  append(panel, grid);
+  const reason = make("div", "kv");
+  append(reason, make("span", "kv-label", "Routing reason"));
+  append(reason, make("span", "kv-value pre", safeText(issue.routing_reason, "No routing reason was recorded.")));
+  append(panel, reason);
+  const map = make("div", "map-canvas");
+  map.id = "issue-detail-map";
+  append(panel, map);
+  append(panel, make("p", "coords", "Recorded coordinates: " + safeText(issue.latitude) + ", " + safeText(issue.longitude) + ". The map uses OpenStreetMap tiles and the stored complaint coordinates."));
+  return panel;
+}
+
+function initDetailMap(issue) {
+  const mapElement = byId("issue-detail-map");
+  if (!mapElement) return;
+  clearDetailMap();
+  if (!window.L || typeof issue.latitude !== "number" || typeof issue.longitude !== "number") {
+    mapElement.replaceChildren(make("p", "muted", "Map library unavailable. Recorded coordinates: " + safeText(issue.latitude) + ", " + safeText(issue.longitude)));
+    return;
+  }
+  try {
+    const map = window.L.map(mapElement, { scrollWheelZoom: false }).setView([issue.latitude, issue.longitude], 16);
+    window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "&copy; OpenStreetMap contributors"
+    }).addTo(map);
+    window.L.marker([issue.latitude, issue.longitude]).addTo(map);
+    state.detailMap = map;
+    window.setTimeout(function () {
+      try { map.invalidateSize(); } catch (error) { /* ignore */ }
+    }, 0);
+  } catch (error) {
+    mapElement.replaceChildren(make("p", "muted", "Map could not be initialised. Recorded coordinates: " + safeText(issue.latitude) + ", " + safeText(issue.longitude)));
+  }
+}
+
+function evidencePanel(issue, images) {
+  const panel = make("section", "panel");
+  append(panel, make("h2", "", "Citizen evidence"));
+  if (!images || !images.length) {
+    append(panel, emptyState("No evidence photographs", "This complaint has no stored citizen evidence photographs."));
+    return panel;
+  }
+  append(panel, make("p", "muted", "Evidence is served only through the authenticated UIMRS endpoint. Images are loaded with your bearer token and are never exposed through a public directory."));
+  const gallery = make("div", "gallery");
+  images.forEach(function (image) {
+    const figure = make("figure", "evidence");
+    const thumb = make("div", "thumb");
+    const loading = make("span", "loading", "Loading evidence…");
+    thumb.appendChild(loading);
+    const img = document.createElement("img");
+    img.alt = "Citizen-submitted evidence for " + safeText(issue.ticket_number, "complaint");
+    img.loading = "eager";
+    const caption = make("figcaption");
+    append(caption,
+      make("b", "", image.passed_verification ? "Passed verification" : "Stored evidence"),
+      make("span", "", "Blur score " + safeText(image.blur_score) + " · brightness " + safeText(image.brightness)),
+      make("span", "", image.resolution_width && image.resolution_height ? image.resolution_width + " × " + image.resolution_height : "Resolution not recorded")
+    );
+    append(figure, thumb, caption);
+    gallery.appendChild(figure);
+    loadEvidenceImage(issue.id, image, img, thumb);
+  });
+  append(panel, gallery);
+  return panel;
+}
+
+async function loadEvidenceImage(issueId, image, img, thumb) {
+  try {
+    const response = await fetch(API_PREFIX + "/issues/" + encodeURIComponent(issueId) +
+      "/images/" + encodeURIComponent(image.id) + "/content", { headers: authHeaders() });
+    if (!response.ok) throw new Error("Evidence image unavailable.");
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    state.evidenceUrls.push(url);
+    img.addEventListener("load", function () {
+      thumb.replaceChildren(img);
+    }, { once: true });
+    img.addEventListener("error", function () {
+      thumb.replaceChildren(make("span", "loading", "Evidence image could not be displayed."));
+    }, { once: true });
+    img.src = url;
+    if (img.complete && img.naturalWidth > 0) {
+      thumb.replaceChildren(img);
+    }
+  } catch (error) {
+    thumb.replaceChildren(make("span", "loading", "Evidence image unavailable."));
+  }
+}
+
+function historyPanel(history) {
+  const panel = make("section", "panel");
+  append(panel, make("h2", "", "Status history"));
+  if (!history || !history.length) {
+    append(panel, emptyState("No status updates recorded", "Status changes made by municipal staff will appear here with their remarks."));
+    return panel;
+  }
+  const timeline = make("div", "timeline");
+  history.forEach(function (entry) {
+    const item = make("div", "timeline-item");
+    append(item, make("span", "timeline-dot"));
+    const body = make("div", "timeline-body");
+    const top = make("div", "timeline-top");
+    append(top, statusChip(entry.new_status));
+    if (entry.old_status) append(top, make("span", "small muted", "from " + statusLabel(entry.old_status)));
+    append(body, top);
+    append(body, make("div", "timeline-comment", safeText(entry.comment, "No remark recorded.")));
+    append(body, make("div", "timeline-meta", formatDate(entry.created_at) + " · Recorded by municipal staff"));
+    append(item, body);
+    timeline.appendChild(item);
+  });
+  append(panel, timeline);
+  return panel;
+}
+
+function renderIssueDetail() {
+  clearDetailMap();
+  clearEvidenceUrls();
+  const container = byId("issue-detail-content");
+  clear(container);
+  if (!state.issueDetail) {
+    container.appendChild(emptyState("Complaint unavailable", "Open a complaint from the list to view its details."));
+    return;
+  }
+  const detail = state.issueDetail;
+  const issue = detail.issue;
+  const head = make("div", "detail-head");
+  const titles = make("div", "titles");
+  append(titles, make("span", "ticket", safeText(issue.ticket_number, "Ticket unavailable")));
+  append(titles, make("h2", "", safeText(issue.title, "Untitled complaint")));
+  const chips = make("div", "detail-chips");
+  append(chips, statusChip(issue.status), priorityChip(issue.priority_level), routingChip(issue.routing_status));
+  if (issue.category_needs_review === true) append(chips, make("span", "chip ai-review", "AI review"));
+  append(titles, chips);
+  append(head, titles);
+  if (detail.can_route) {
+    const reviewButton = make("button", "btn primary", "Open jurisdiction review");
+    reviewButton.type = "button";
+    reviewButton.addEventListener("click", function () { openReview(issue.id); });
+    append(head, reviewButton);
+  }
+
+  const stack = make("div", "detail-stack");
+  append(stack, head, classificationPanel(issue), routingPanel(issue, detail.department), historyPanel(detail.history));
+  const side = make("div", "detail-stack");
+
+  const complaintPanel = make("section", "panel");
+  append(complaintPanel, make("h2", "", "Complaint"));
+  const complaintGrid = make("div", "kv-grid");
+  append(complaintGrid,
+    kvRow("Description", issue.description, true),
+    kvRow("Reporter", detail.reporter_name || "Not available"),
+    kvRow("Assigned officer", detail.assigned_officer ? detail.assigned_officer.name : "Unclaimed"),
+    kvRow("Record type", issue.is_historical ? "Historical source record" : "Live operational record")
+  );
+  append(complaintPanel, complaintGrid);
+
+  const departmentPanel = make("section", "panel");
+  append(departmentPanel, make("h2", "", "Department"));
+  if (detail.department) {
+    const grid = make("div", "kv-grid");
+    append(grid,
+      kvRow("Department", detail.department.name),
+      kvRow("Agency", detail.department.source_agency || "Not recorded"),
+      kvRow("City", detail.department.city || "Not recorded"),
+      kvRow("Category", categoryLabel(detail.department.handles_category)),
+      kvRow("Routing mode", detail.department.routing_mode || "Not recorded"),
+      kvRow("Active", detail.department.is_active ? "Yes" : "No")
+    );
+    append(departmentPanel, grid);
+  } else {
+    append(departmentPanel, make("p", "muted", "This complaint has no assigned department."));
+  }
+
+  append(side, complaintPanel, departmentPanel, evidencePanel(issue, detail.images));
+  const gridWrap = make("div", "detail-grid");
+  append(gridWrap, stack, side);
+  container.appendChild(gridWrap);
+  initDetailMap(issue);
+}
+
+/* ------------------------------------------------------------------ */
+/* Manual jurisdiction review                                         */
+/* ------------------------------------------------------------------ */
+async function loadReviewQueue() {
+  const statusBox = byId("review-status-message");
+  setMessage(statusBox, "Loading review queue.", "info");
+  const params = new URLSearchParams();
+  params.set("limit", "100");
+  ["city", "category", "priority"].forEach(function (key) {
+    const value = byId("review-" + key).value;
+    if (value) params.set(key, value);
+  });
+  try {
+    const rows = await api("/admin/review-queue?" + params.toString());
+    state.reviewQueue = rows;
+    setMessage(statusBox, "", "info");
+    renderIssueList(
+      byId("review-list"),
+      rows,
+      "No complaints awaiting jurisdiction review",
+      "Every live unassigned complaint currently has a documented routing outcome, or no complaint matches the filters."
+    );
+  } catch (error) {
+    setMessage(statusBox, error.message, "error");
+    byId("review-list").replaceChildren(emptyState("Could not load the review queue", error.message));
+  }
+}
+
+async function openReview(issueId) {
+  setGlobalMessage("Loading jurisdiction review detail.", "info");
+  try {
+    state.reviewDetail = await api("/admin/issues/" + encodeURIComponent(issueId));
+    navigate("review-detail");
+    renderReviewDetail();
+    setGlobalMessage("", "info");
+  } catch (error) {
+    setGlobalMessage(error.message, "error");
+  }
+}
+
+function candidateList(candidates) {
+  const panel = make("section", "panel");
+  append(panel, make("h2", "", "Verified department candidates"));
+  append(panel, make("p", "muted", "Candidates are limited by the backend to the complaint's exact city and category. Disabled, inactive, unverified or mismatched rows cannot be selected."));
+  if (!candidates || !candidates.length) {
+    append(panel, emptyState("No candidate department", "No directory row exists for this city and category. The complaint must remain unassigned."));
+    return panel;
+  }
+  const list = make("div", "candidate-list");
+  candidates.forEach(function (candidate) {
+    const card = make("div", "candidate " + (candidate.selectable ? "selectable" : ""));
+    const head = make("div", "candidate-head");
+    const left = make("div");
+    append(left, make("div", "candidate-name", candidate.name));
+    const meta = make("div", "candidate-meta");
+    append(meta,
+      make("span", "", safeText(candidate.source_agency, "Agency not recorded")),
+      make("span", "", safeText(candidate.city, "City not recorded")),
+      make("span", "", categoryLabel(candidate.handles_category)),
+      modeChip(candidate.routing_mode)
+    );
+    append(left, meta);
+    append(head, left);
+    append(card, head);
+    if (candidate.selectable) {
+      const line = make("label", "radio-line");
+      const radio = document.createElement("input");
+      radio.type = "radio";
+      radio.name = "review-candidate";
+      radio.value = candidate.id;
+      append(line, radio, document.createTextNode("Select this verified department for the routing decision."));
+      append(card, line);
+    } else {
+      append(card, make("div", "candidate-blocked", "Not selectable: " + (candidate.blocked_reasons || []).join(" ")));
+    }
+    const details = make("div", "kv-grid");
+    append(details,
+      kvRow("Verification source", candidate.verification_source_url || "Not recorded"),
+      kvRow("Verification date", candidate.verification_date || "Not recorded"),
+      kvRow("Jurisdiction", candidate.jurisdiction || "Not recorded"),
+      kvRow("Contact purpose", candidate.contact_purpose || "Not recorded"),
+      kvRow("Official phone", candidate.contact_phone || "Not recorded"),
+      kvRow("Official e-mail", candidate.contact_email || "Not recorded")
+    );
+    append(card, details);
+    list.appendChild(card);
+  });
+  append(panel, list);
+  return panel;
+}
+
+function renderReviewDetail() {
+  const container = byId("review-detail-content");
+  clear(container);
+  if (!state.reviewDetail) {
+    container.appendChild(emptyState("Review unavailable", "Open a complaint from the review queue."));
+    return;
+  }
+  const detail = state.reviewDetail;
+  const issue = detail.issue;
+  const head = make("div", "detail-head");
+  const titles = make("div", "titles");
+  append(titles, make("span", "ticket", safeText(issue.ticket_number, "Ticket unavailable")));
+  append(titles, make("h2", "", safeText(issue.title, "Untitled complaint")));
+  const chips = make("div", "detail-chips");
+  append(chips, statusChip(issue.status), priorityChip(issue.priority_level), routingChip(issue.routing_status));
+  if (issue.category_needs_review === true) append(chips, make("span", "chip ai-review", "AI review"));
+  append(titles, chips);
+  append(head, titles);
+
+  const stack = make("div", "detail-stack");
+  append(stack, head, classificationPanel(issue), routingPanel(issue, detail.department));
+
+  const contextPanel = make("section", "panel");
+  append(contextPanel, make("h2", "", "Jurisdiction context"));
+  const contextGrid = make("div", "kv-grid");
+  append(contextGrid,
+    kvRow("Description", issue.description, true),
+    kvRow("City", issue.city || "Not recorded"),
+    kvRow("Category", categoryLabel(issue.category)),
+    kvRow("Address", issue.address_text || "Not recorded"),
+    kvRow("Coordinates", safeText(issue.latitude) + ", " + safeText(issue.longitude)),
+    kvRow("Classification source", issue.category_source || "Not available"),
+    kvRow("AI review flag", issue.category_needs_review === null || issue.category_needs_review === undefined ? "Not recorded" : (issue.category_needs_review ? "Yes" : "No")),
+    kvRow("AI review reason", issue.category_review_reason || "Not recorded"),
+    kvRow("Priority reasons", Array.isArray(issue.priority_reasons) && issue.priority_reasons.length ? issue.priority_reasons.join("; ") : "Not recorded", true),
+    kvRow("Current routing status", ROUTING_LABELS[String(issue.routing_status)] || issue.routing_status || "Not recorded"),
+    kvRow("Current routing reason", issue.routing_reason || "Not recorded", true)
+  );
+  append(contextPanel, contextGrid);
+
+  const actionPanel = make("section", "panel action-panel");
+  append(actionPanel, make("h2", "", "Administrative routing decision"));
+  if (!detail.can_route) {
+    append(actionPanel, make("div", "notice info", safeText(detail.routing_block_reason, "This complaint is not awaiting a routing decision.")));
+    append(stack, contextPanel, actionPanel, candidateList(detail.candidates));
+    const wrap = make("div", "detail-grid");
+    append(wrap, stack, make("div", "detail-stack"));
+    container.appendChild(wrap);
+    return;
+  }
+  append(actionPanel, make("p", "note", "Select one verified same-city, same-category department, or keep the complaint unassigned. A justification of at least 10 characters is required for either decision. Routing does not assign an officer; the existing claim workflow remains in force."));
+  const form = make("form", "route-form");
+  const reasonField = make("div", "field");
+  const reason = document.createElement("textarea");
+  reason.id = "review-reason";
+  reason.required = true;
+  reason.minLength = 10;
+  reason.maxLength = 2000;
+  reason.placeholder = "Explain the evidence and the jurisdiction decision. This reason is written to the administrative audit log.";
+  append(reasonField, make("label", "", "Administrative justification"), reason);
+  append(form, reasonField);
+  const actions = make("div", "form-actions");
+  const routeButton = make("button", "btn primary", "Route to selected department");
+  routeButton.type = "submit";
+  const leaveButton = make("button", "btn danger", "Keep unassigned");
+  leaveButton.type = "button";
+  append(actions, routeButton, leaveButton);
+  append(form, actions);
+  const message = make("div", "form-message info hidden");
+  message.setAttribute("role", "status");
+  append(form, message);
+
+  form.addEventListener("submit", async function (event) {
+    event.preventDefault();
+    const selected = document.querySelector('input[name="review-candidate"]:checked');
+    if (!selected) {
+      setMessage(message, "Select a verified department before routing, or use 'Keep unassigned'.", "error");
+      return;
+    }
+    await submitRoutingDecision(issue.id, selected.value, reason.value, message, routeButton, leaveButton);
+  });
+  leaveButton.addEventListener("click", async function () {
+    await submitRoutingDecision(issue.id, null, reason.value, message, routeButton, leaveButton);
+  });
+  append(actionPanel, form);
+  append(stack, contextPanel, actionPanel, candidateList(detail.candidates));
+  const side = make("div", "detail-stack");
+  side.appendChild(historyPanel(detail.history));
+  const wrap = make("div", "detail-grid");
+  append(wrap, stack, side);
+  container.appendChild(wrap);
+}
+
+async function submitRoutingDecision(issueId, departmentId, reasonText, messageNode, routeButton, leaveButton) {
+  const justification = String(reasonText || "").trim();
+  if (justification.length < 10) {
+    setMessage(messageNode, "A meaningful administrative justification of at least 10 characters is required.", "error");
+    return;
+  }
+  routeButton.disabled = true;
+  leaveButton.disabled = true;
+  setMessage(messageNode, departmentId ? "Recording routing decision." : "Recording leave-unassigned decision.", "info");
+  try {
+    const payload = { department_id: departmentId, reason: justification };
+    const result = await api("/admin/issues/" + encodeURIComponent(issueId) + "/route", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
+    setGlobalMessage(result.message + " Audit event: " + result.action + ".", "success");
+    await loadOverview();
+    await loadReviewQueue();
+    state.reviewDetail = await api("/admin/issues/" + encodeURIComponent(issueId));
+    renderReviewDetail();
+  } catch (error) {
+    setMessage(messageNode, error.message, "error");
+    routeButton.disabled = false;
+    leaveButton.disabled = false;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Officer management                                                 */
+/* ------------------------------------------------------------------ */
+async function loadOfficers() {
+  const statusBox = byId("officer-status-message");
+  setMessage(statusBox, "Loading officer accounts.", "info");
+  try {
+    const rows = await api("/admin/officers?limit=200");
+    state.officers = rows;
+    setMessage(statusBox, "", "info");
+    renderOfficers();
+  } catch (error) {
+    setMessage(statusBox, error.message, "error");
+    byId("officers-table").replaceChildren(emptyState("Could not load officers", error.message));
+  }
+}
+
+function renderOfficers() {
+  const container = byId("officers-table");
+  clear(container);
+  if (!state.officers.length) {
+    container.appendChild(emptyState("No officer accounts", "No OFFICER account exists in the database yet. Provision one using the controlled form below."));
+    return;
+  }
+  const wrap = make("div", "table-wrap");
+  const table = make("table");
+  const head = make("thead");
+  const headRow = make("tr");
+  ["Officer", "E-mail", "Phone", "Department", "City", "Created", "Reassign department"].forEach(function (label) {
+    headRow.appendChild(make("th", "", label));
+  });
+  head.appendChild(headRow);
+  const body = make("tbody");
+  state.officers.forEach(function (officer) {
+    const tr = make("tr");
+    append(tr,
+      make("td", "", safeText(officer.name)),
+      make("td", "wrap", safeText(officer.email)),
+      make("td", "", safeText(officer.phone, "Not recorded")),
+      make("td", "", safeText(officer.department_name, "No department")),
+      make("td", "", safeText(officer.department_city, "Not recorded")),
+      make("td", "", formatDate(officer.created_at))
+    );
+    const actionCell = make("td");
+    const button = make("button", "table-link", "Reassign");
+    button.type = "button";
+    button.addEventListener("click", function () { showOfficerReassign(officer, actionCell); });
+    actionCell.appendChild(button);
+    tr.appendChild(actionCell);
+    body.appendChild(tr);
+  });
+  append(table, head, body);
+  wrap.appendChild(table);
+  container.appendChild(wrap);
+}
+
+function showOfficerReassign(officer, cell) {
+  clear(cell);
+  const form = make("div", "route-form");
+  const select = document.createElement("select");
+  select.required = true;
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = "Select verified department";
+  select.appendChild(placeholder);
+  departmentOptions(true).forEach(function (item) {
+    const option = document.createElement("option");
+    option.value = item.value;
+    option.textContent = item.label;
+    select.appendChild(option);
+  });
+  const reason = document.createElement("input");
+  reason.type = "text";
+  reason.placeholder = "Justification (min 10 characters)";
+  reason.maxLength = 2000;
+  const submit = make("button", "btn small primary", "Save");
+  submit.type = "button";
+  const cancel = make("button", "btn small ghost", "Cancel");
+  cancel.type = "button";
+  const message = make("div", "form-message info hidden");
+  message.setAttribute("role", "status");
+  const actions = make("div", "form-actions");
+  append(actions, submit, cancel);
+  append(form, select, reason, actions, message);
+  append(cell, form);
+  cancel.addEventListener("click", function () { renderOfficers(); });
+  submit.addEventListener("click", async function () {
+    const departmentId = select.value;
+    const justification = reason.value.trim();
+    if (!departmentId) {
+      setMessage(message, "Select a verified active department.", "error");
+      return;
+    }
+    if (justification.length < 10) {
+      setMessage(message, "A meaningful justification of at least 10 characters is required.", "error");
+      return;
+    }
+    submit.disabled = true;
+    setMessage(message, "Updating department assignment.", "info");
+    try {
+      await api("/admin/officers/" + encodeURIComponent(officer.id) + "/department", {
+        method: "PATCH",
+        body: JSON.stringify({ department_id: departmentId, reason: justification })
+      });
+      setGlobalMessage("Officer department updated and audited.", "success");
+      await loadOfficers();
+    } catch (error) {
+      setMessage(message, error.message, "error");
+      submit.disabled = false;
+    }
+  });
+}
+
+async function createOfficer(event) {
+  event.preventDefault();
+  const button = byId("officer-create-submit");
+  const message = byId("officer-create-message");
+  const payload = {
+    name: byId("officer-name").value.trim(),
+    email: byId("officer-email").value.trim(),
+    phone: byId("officer-phone").value.trim() || null,
+    password: byId("officer-password").value,
+    department_id: byId("officer-department").value,
+    preferred_language: byId("officer-language").value.trim() || "en"
+  };
+  if (!payload.department_id) {
+    setMessage(message, "Select a verified active department.", "error");
+    return;
+  }
+  button.disabled = true;
+  setMessage(message, "Creating officer account.", "info");
+  try {
+    await api("/admin/officers", { method: "POST", body: JSON.stringify(payload) });
+    setMessage(message, "Officer account created. The password was hashed and is never displayed.", "success");
+    byId("officer-create-form").reset();
+    byId("officer-language").value = "en";
+    await loadOfficers();
+  } catch (error) {
+    setMessage(message, error.message, "error");
+  } finally {
+    button.disabled = false;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Verified directory                                                 */
+/* ------------------------------------------------------------------ */
+async function loadDirectory() {
+  const statusBox = byId("directory-status-message");
+  setMessage(statusBox, "Loading verified directory.", "info");
+  const params = new URLSearchParams();
+  const city = byId("directory-city").value;
+  const category = byId("directory-category").value;
+  const mode = byId("directory-mode").value;
+  const active = byId("directory-active").value;
+  const search = byId("directory-search").value.trim();
+  if (city) params.set("city", city);
+  if (category) params.set("category", category);
+  if (mode) params.set("routing_mode", mode);
+  if (active) params.set("active", active);
+  if (search) params.set("q", search);
+  try {
+    const rows = await api("/admin/departments" + (params.toString() ? "?" + params.toString() : ""));
+    setMessage(statusBox, "", "info");
+    renderDirectory(rows);
+  } catch (error) {
+    setMessage(statusBox, error.message, "error");
+    byId("directory-table").replaceChildren(emptyState("Could not load the directory", error.message));
+  }
+}
+
+function renderDirectory(rows) {
+  const container = byId("directory-table");
+  clear(container);
+  if (!rows || !rows.length) {
+    container.appendChild(emptyState("No directory records", "No verified directory row matches the selected filters."));
+    return;
+  }
+  const wrap = make("div", "table-wrap");
+  const table = make("table");
+  const head = make("thead");
+  const headRow = make("tr");
+  ["Agency", "Department / wing", "City", "Category", "Jurisdiction", "Routing mode", "Official phone", "Official e-mail", "Contact purpose", "Verification source", "Verified", "Active"].forEach(function (label) {
+    headRow.appendChild(make("th", "", label));
+  });
+  head.appendChild(headRow);
+  const body = make("tbody");
+  rows.forEach(function (department) {
+    const tr = make("tr");
+    append(tr,
+      make("td", "wrap", safeText(department.source_agency, "Not recorded")),
+      make("td", "wrap", safeText(department.name)),
+      make("td", "wrap", safeText(department.city, "Not recorded")),
+      make("td", "", categoryLabel(department.handles_category)),
+      make("td", "wrap", safeText(department.jurisdiction, "Not recorded")),
+      nodeCell(modeChip(department.routing_mode)),
+      make("td", "", safeText(department.contact_phone, "Not recorded")),
+      make("td", "wrap", safeText(department.contact_email, "Not recorded")),
+      make("td", "wrap", safeText(department.contact_purpose, "Not recorded")),
+      nodeCell(linkNode(department.verification_source_url, "Not recorded"), "wrap"),
+      make("td", "", safeText(department.verification_date, "Not recorded")),
+      make("td", "", department.is_active ? "Active" : "Inactive")
+    );
+    body.appendChild(tr);
+  });
+  append(table, head, body);
+  wrap.appendChild(table);
+  container.appendChild(wrap);
+}
+
+/* ------------------------------------------------------------------ */
+/* Administrative audit log                                           */
+/* ------------------------------------------------------------------ */
+async function loadAudit() {
+  const statusBox = byId("audit-status-message");
+  setMessage(statusBox, "Loading audit history.", "info");
+  const params = new URLSearchParams();
+  params.set("skip", String(state.audit.skip));
+  params.set("limit", String(state.audit.limit));
+  const action = byId("audit-action").value;
+  const entity = byId("audit-entity").value;
+  const actor = byId("audit-actor").value.trim();
+  const city = byId("audit-city").value.trim();
+  const from = byId("audit-from").value;
+  const to = byId("audit-to").value;
+  if (action) params.set("action", action);
+  if (entity) params.set("entity_type", entity);
+  if (actor) params.set("actor_user_id", actor);
+  if (city) params.set("city", city);
+  if (from) params.set("date_from", from);
+  if (to) params.set("date_to", to);
+  try {
+    state.audit = await api("/admin/audit-logs?" + params.toString());
+    setMessage(statusBox, "", "info");
+    renderAudit();
+  } catch (error) {
+    setMessage(statusBox, error.message, "error");
+    byId("audit-table").replaceChildren(emptyState("Could not load the audit log", error.message));
+    byId("audit-pagination").replaceChildren();
+  }
+}
+
+function auditStateNode(value) {
+  const details = make("details", "audit-state");
+  details.appendChild(make("summary", "", "State snapshot"));
+  details.appendChild(make("pre", "", value ? JSON.stringify(value, null, 2) : "Not recorded"));
+  return details;
+}
+
+function auditStateCell(value) {
+  return nodeCell(auditStateNode(value));
+}
+
+function renderAudit() {
+  const container = byId("audit-table");
+  clear(container);
+  const rows = state.audit.items || [];
+  if (!rows.length) {
+    container.appendChild(emptyState("No audit events", "No administrative audit event matches the selected filters."));
+  } else {
+    const wrap = make("div", "table-wrap");
+    const table = make("table");
+    const head = make("thead");
+    const headRow = make("tr");
+    ["Created", "Actor", "Action", "Entity", "City", "Reason", "Before", "After"].forEach(function (label) {
+      headRow.appendChild(make("th", "", label));
+    });
+    head.appendChild(headRow);
+    const body = make("tbody");
+    rows.forEach(function (entry) {
+      const tr = make("tr");
+      append(tr,
+        make("td", "", formatDate(entry.created_at)),
+        make("td", "", safeText(entry.actor_name, entry.actor_user_id)),
+        make("td", "wrap", safeText(entry.action)),
+        make("td", "wrap", safeText(entry.entity_type) + " · " + safeText(entry.entity_id, "not recorded")),
+        make("td", "", safeText(entry.city, "Not recorded")),
+        make("td", "wrap", safeText(entry.reason, "Not recorded")),
+        auditStateCell(entry.before_state),
+        auditStateCell(entry.after_state)
+      );
+      body.appendChild(tr);
+    });
+    append(table, head, body);
+    wrap.appendChild(table);
+    container.appendChild(wrap);
+  }
+  renderAuditPagination();
+}
+
+function renderAuditPagination() {
+  const container = byId("audit-pagination");
+  clear(container);
+  const total = state.audit.total || 0;
+  const skip = state.audit.skip || 0;
+  const limit = state.audit.limit || 50;
+  const page = Math.floor(skip / limit) + 1;
+  const pages = Math.max(1, Math.ceil(total / limit));
+  const previous = make("button", "btn small", "Previous");
+  previous.type = "button";
+  previous.disabled = skip <= 0;
+  previous.addEventListener("click", function () {
+    state.audit.skip = Math.max(0, skip - limit);
+    loadAudit();
+  });
+  const next = make("button", "btn small", "Next");
+  next.type = "button";
+  next.disabled = skip + limit >= total;
+  next.addEventListener("click", function () {
+    state.audit.skip = skip + limit;
+    loadAudit();
+  });
+  append(container,
+    previous,
+    make("span", "", "Page " + page + " of " + pages + " · " + total + " audit event" + (total === 1 ? "" : "s")),
+    next
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Profile                                                            */
+/* ------------------------------------------------------------------ */
+function renderProfile() {
+  const container = byId("profile-content");
+  clear(container);
+  if (!state.user) return;
+  const account = make("section", "panel profile-card");
+  const avatar = make("div", "profile-avatar", initials(state.user.name));
+  append(account, avatar, make("h2", "", safeText(state.user.name, "Administrator")), make("p", "email", safeText(state.user.email)));
+  const grid = make("div", "kv-grid");
+  append(grid,
+    kvRow("Role", state.user.role || "admin"),
+    kvRow("Preferred language", state.user.preferred_language || "Not recorded"),
+    kvRow("Account created", formatDate(state.user.created_at))
+  );
+  append(account, grid);
+  append(account, make("div", "notice info", "Your bearer token is held in sessionStorage for this tab only. Signing out removes it and clears all cached portal data."));
+  const signOut = make("button", "btn danger", "Log out securely");
+  signOut.type = "button";
+  signOut.addEventListener("click", function () { logout(true); });
+  append(account, signOut);
+
+  const scope = make("section", "panel profile-card");
+  append(scope, make("h2", "", "Administrative scope"));
+  append(scope, make("p", "muted", "This workspace is restricted by the backend to accounts whose database role is ADMIN. The portal never sends an actor id, role or department override with a request."));
+  const list = make("ul", "reason-list");
+  [
+    "Live and historical records are queried separately.",
+    "Routing validates city, category, active status, routing mode and verification provenance.",
+    "Audit entries are append-only and cannot be edited or deleted through the API.",
+    "Citizen contact details are not included in overview responses."
+  ].forEach(function (item) { list.appendChild(make("li", "", item)); });
+  append(scope, list);
+  append(container, account, scope);
+}
+
+/* ------------------------------------------------------------------ */
+/* Events                                                             */
+/* ------------------------------------------------------------------ */
+function bindEvents() {
+  byId("login-form").addEventListener("submit", async function (event) {
+    event.preventDefault();
+    const email = byId("login-email").value.trim();
+    const password = byId("login-password").value;
+    const button = byId("login-submit");
+    setLoginMessage("", "info");
+    button.disabled = true;
+    try {
+      await login(email, password);
+      setLoginMessage("", "info");
+    } catch (error) {
+      setLoginMessage(error.message, "error");
+      byId("login-password").value = "";
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  document.querySelectorAll(".nav-btn").forEach(function (button) {
+    button.addEventListener("click", function () {
+      navigate(button.getAttribute("data-view"));
+    });
+  });
+
+  byId("profile-button").addEventListener("click", function () { navigate("profile"); });
+  byId("logout-button").addEventListener("click", function () { logout(true); });
+  byId("menu-toggle").addEventListener("click", function () {
+    byId("sidebar").classList.toggle("open");
+  });
+
+  byId("refresh-dashboard").addEventListener("click", function () { loadOverview(); });
+  byId("apply-dashboard-filters").addEventListener("click", function () { loadOverview(); });
+  byId("clear-dashboard-filters").addEventListener("click", function () {
+    byId("dashboard-city").value = "";
+    byId("dashboard-department").value = "";
+    loadOverview();
+  });
+
+  byId("refresh-issues").addEventListener("click", function () { loadIssues(); });
+  byId("apply-issues-filters").addEventListener("click", function () { loadIssues(); });
+  byId("clear-issues-filters").addEventListener("click", function () {
+    byId("issues-scope").value = "live";
+    byId("issues-status").value = "";
+    byId("issues-category").value = "";
+    byId("issues-priority").value = "";
+    byId("issues-city").value = "";
+    byId("issues-department").value = "";
+    byId("issues-routing").value = "";
+    byId("issues-search").value = "";
+    loadIssues();
+  });
+  byId("issues-search").addEventListener("input", function () {
+    window.clearTimeout(state.searchTimer);
+    state.searchTimer = window.setTimeout(function () { loadIssues(); }, 280);
+  });
+  ["issues-scope", "issues-status", "issues-category", "issues-priority", "issues-city", "issues-department", "issues-routing"].forEach(function (id) {
+    byId(id).addEventListener("change", function () { loadIssues(); });
+  });
+  byId("back-to-issues").addEventListener("click", function () { navigate("issues"); });
+
+  byId("refresh-review").addEventListener("click", function () { loadReviewQueue(); });
+  byId("apply-review-filters").addEventListener("click", function () { loadReviewQueue(); });
+  byId("clear-review-filters").addEventListener("click", function () {
+    byId("review-city").value = "";
+    byId("review-category").value = "";
+    byId("review-priority").value = "";
+    loadReviewQueue();
+  });
+  ["review-city", "review-category", "review-priority"].forEach(function (id) {
+    byId(id).addEventListener("change", function () { loadReviewQueue(); });
+  });
+  byId("back-to-review").addEventListener("click", function () { navigate("review"); });
+
+  byId("refresh-officers").addEventListener("click", function () { loadOfficers(); });
+  byId("officer-create-form").addEventListener("submit", createOfficer);
+
+  byId("refresh-directory").addEventListener("click", function () { loadDirectory(); });
+  byId("apply-directory-filters").addEventListener("click", function () { loadDirectory(); });
+  byId("clear-directory-filters").addEventListener("click", function () {
+    byId("directory-city").value = "";
+    byId("directory-category").value = "";
+    byId("directory-mode").value = "";
+    byId("directory-active").value = "";
+    byId("directory-search").value = "";
+    loadDirectory();
+  });
+  ["directory-city", "directory-category", "directory-mode", "directory-active"].forEach(function (id) {
+    byId(id).addEventListener("change", function () { loadDirectory(); });
+  });
+  byId("directory-search").addEventListener("input", function () {
+    window.clearTimeout(state.searchTimer);
+    state.searchTimer = window.setTimeout(function () { loadDirectory(); }, 280);
+  });
+
+  byId("refresh-audit").addEventListener("click", function () {
+    state.audit.skip = 0;
+    loadAudit();
+  });
+  byId("apply-audit-filters").addEventListener("click", function () {
+    state.audit.skip = 0;
+    loadAudit();
+  });
+  byId("clear-audit-filters").addEventListener("click", function () {
+    byId("audit-action").value = "";
+    byId("audit-entity").value = "";
+    byId("audit-actor").value = "";
+    byId("audit-city").value = "";
+    byId("audit-from").value = "";
+    byId("audit-to").value = "";
+    state.audit.skip = 0;
+    loadAudit();
+  });
+}
+
+async function init() {
+  bindEvents();
+  let saved = null;
+  try { saved = window.sessionStorage.getItem(TOKEN_KEY); } catch (error) { saved = null; }
+  if (!saved) {
+    showAuth();
+    return;
+  }
+  state.token = saved;
+  try {
+    await loadSession();
+  } catch (error) {
+    logout(false);
+    setLoginMessage(error.message || "Sign-in required.", "error");
+  }
+}
+
+document.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>

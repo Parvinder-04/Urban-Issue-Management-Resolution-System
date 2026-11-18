@@ -1,0 +1,535 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>UIMRS Authority Dashboard</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:#f4f7fb;color:#182230}.shell{display:flex;min-height:100vh}.side{width:230px;background:#0f172a;color:#dbeafe;padding:24px 16px;flex-shrink:0}.brand{font-weight:800;font-size:18px;margin:0 8px 28px}.brand small{display:block;color:#94a3b8;font-weight:500;margin-top:5px}.nav{display:block;width:100%;border:0;background:transparent;text-align:left;font:inherit;cursor:pointer;padding:11px 12px;border-radius:10px;margin:5px 0;color:#cbd5e1}.nav:hover,.nav.active{background:#1e293b;color:#fff}.main{flex:1;padding:28px;max-width:1500px;margin:auto}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}.top h1{margin:0;font-size:27px}.subtitle{color:#64748b;font-size:13px;margin-top:5px}.page{display:none}.page.active{display:block}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}.card,.section{background:#fff;border:1px solid #e5eaf1;border-radius:15px;padding:19px;box-shadow:0 4px 15px #0f172a08}.label{font-size:12px;color:#64748b}.value{font-size:30px;font-weight:800;margin-top:7px}.grid{display:grid;grid-template-columns:1.35fr .85fr;gap:18px;margin-top:18px}.section h2{font-size:16px;margin:0 0 16px}.bars{display:flex;flex-direction:column;gap:11px}.barrow{display:grid;grid-template-columns:145px 1fr 38px;gap:10px;align-items:center;font-size:12px}.bar{height:9px;background:#e8eef6;border-radius:20px;overflow:hidden}.fill{height:100%;background:#2563eb;border-radius:20px}.table{width:100%;border-collapse:collapse;font-size:12px}.table th,.table td{text-align:left;padding:11px 8px;border-bottom:1px solid #edf1f5}.pill{padding:4px 8px;border-radius:999px;font-size:10px;font-weight:700}.Critical{background:#fee2e2;color:#991b1b}.High{background:#ffedd5;color:#9a3412}.Medium{background:#fef9c3;color:#854d0e}.Low{background:#dcfce7;color:#166534}.Hist{background:#e2e8f0;color:#334155}.Live{background:#dbeafe;color:#1e40af}div.map{height:300px;border-radius:12px;overflow:hidden;background:#eef2f7}.leaflet-container{width:100%}.legend,.muted{font-size:11px;color:#64748b;margin-top:9px}.footer{margin-top:18px;color:#64748b;font-size:11px}.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:15px}.toolbar input,.toolbar select,.chat-input{padding:10px;border:1px solid #dbe3ee;border-radius:9px;background:#fff}.btn{border:0;border-radius:9px;padding:10px 14px;background:#2563eb;color:#fff;font-weight:700;cursor:pointer}.btn.secondary{background:#e2e8f0;color:#1e293b}.stat-list{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.stat-list .card{box-shadow:none}.chat{max-width:750px}.chat-log{min-height:220px;max-height:350px;overflow:auto;border:1px solid #e5eaf1;border-radius:12px;padding:14px;background:#f8fafc;margin-bottom:12px}.msg{padding:10px 12px;border-radius:10px;margin:8px 0;max-width:85%;font-size:13px}.msg.user{background:#dbeafe;margin-left:auto}.msg.bot{background:#fff;border:1px solid #e2e8f0}.chat-row{display:flex;gap:8px}.chat-input{flex:1}.notice{padding:12px;border-radius:10px;background:#eff6ff;color:#1d4ed8;font-size:12px;margin-bottom:15px}
+@media(max-width:1000px){.cards{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}.side{width:190px}}@media(max-width:650px){.shell{display:block}.side{width:100%;padding:15px}.nav{display:inline-block;width:auto}.main{padding:16px}.cards,.stat-list{grid-template-columns:1fr}.top{align-items:flex-start;gap:10px;flex-direction:column}}
+</style>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+</head>
+<body>
+<div class="shell">
+<aside class="side"><div class="brand">UIMRS<small>Urban Issue Intelligence</small></div>
+<button class="nav active" data-page="overview">Overview</button><button class="nav" data-page="issues">Historical Complaints</button><button class="nav" data-page="hotspots">Hotspots</button><button class="nav" data-page="departments">Departments</button><button class="nav" data-page="analytics">Analytics</button><button class="nav" data-page="support">Citizen Support</button>
+</aside>
+<main class="main">
+<div class="top"><div><h1 id="page-title">Authority Dashboard</h1><div class="subtitle">AI-assisted civic issue monitoring and resolution</div></div></div>
+
+<section id="empty-state-banner" class="section" hidden style="margin-bottom:18px;border-left:4px solid #c47f00;background:#fff8e8">
+<h2 style="margin-top:0">No historical complaint data is configured</h2>
+<div class="muted">This installation has an empty database. Historical charts, tables, hotspots and resolution metrics remain empty until an operator loads an authorised historical dataset. No records or metrics are fabricated.</div>
+</section>
+
+<section id="overview" class="page active">
+<div class="cards"><div class="card"><div class="label">Historical Complaints</div><div class="value" id="total">—</div></div><div class="card"><div class="label">Reported / In Progress</div><div class="value" id="open">—</div></div><div class="card"><div class="label">Resolved This Week</div><div class="value" id="resolved">—</div></div><div class="card"><div class="label">Avg. Resolution</div><div class="value" id="avg">—</div></div></div>
+<div class="grid"><section class="section"><h2>Issue Distribution</h2><div class="bars" id="bars"></div></section><section class="section"><h2>Geographic Complaint Clusters</h2><div id="overview-map" class="map"></div><div class="legend">Historical Bengaluru complaint coordinates · Geographic clustering</div></section></div>
+<div class="grid"><section class="section"><h2>Historical Complaint Records</h2><table class="table"><thead><tr><th>Source Record ID</th><th>Record</th><th>Issue</th><th>Category</th><th>Source Status</th></tr></thead><tbody id="overview-issues"></tbody></table></section><section class="section"><h2>System Intelligence</h2><div style="display:grid;gap:12px;font-size:13px"><div><b>Duplicate clustering</b><br><span class="muted">Groups nearby historical complaint coordinates. Geographic clusters do not prove duplicate incidents.</span></div><div><b>Historical priority</b><br><span class="muted">Priority values are not supplied by this historical source. No historical priority scores are displayed.</span></div><div><b>Image verification</b><br><span class="muted">No historical image-verification results were supplied in this dataset.</span></div><div><b>Multilingual support</b><br><span class="muted">Pre-approved English/Hindi citizen-support intents.</span></div></div></section></div>
+</section>
+
+<section id="issues" class="page">
+<div class="section">
+<h2>Historical Complaint Records</h2>
+<div class="toolbar">
+<input id="issue-search" placeholder="Search source ID, complaint, or agency">
+<select id="status-filter">
+<option value="">All statuses</option>
+<option>reported</option>
+<option>acknowledged</option>
+<option>in_progress</option>
+<option>resolved</option>
+<option>rejected</option>
+</select>
+<button class="btn secondary" id="clear-filter">Clear</button>
+</div>
+<div id="issue-data-note" class="muted"></div>
+<table class="table">
+<thead><tr>
+<th>Source Record ID</th><th>Record</th><th>Complaint</th><th>Category</th>
+<th>Source Status</th><th>Source Agency</th><th>Department</th>
+</tr></thead>
+<tbody id="all-issues"></tbody>
+</table>
+</div></section>
+
+<section id="hotspots" class="page"><div class="grid"><section class="section"><h2>Geographic Complaint Clusters</h2><div id="hotspot-map" class="map"></div><div class="legend">Geographic clusters calculated from recorded Bengaluru coordinates.</div></section><section class="section"><h2>Hotspot Summary</h2><div id="hotspot-list" class="muted">Loading...</div></section></div></section>
+
+<section id="departments" class="page">
+<div class="section">
+<h2>Source Agency Distribution</h2>
+<table class="table">
+<thead><tr>
+<th>Source Agency</th><th>Total Records</th><th>Reported</th>
+<th>In Progress</th><th>Resolved</th><th>Rejected</th>
+</tr></thead>
+<tbody id="department-table"></tbody>
+</table>
+<div id="department-unassigned" class="muted"></div>
+</div></section>
+
+<section id="analytics" class="page"><div class="stat-list"><div class="card"><div class="label">Categories</div><div class="value" id="analytics-categories">—</div></div><div class="card"><div class="label">Departments</div><div class="value" id="analytics-departments">—</div></div></div><div class="section" style="margin-top:18px"><h2>Category Analytics</h2><div id="analytics-breakdown"></div></div></section>
+
+<section id="support" class="page"><div class="section chat"><h2>Citizen Support Assistant</h2><div class="notice">Prototype chatbot using the backend intent service. It does not yet create a complaint ticket.</div><div id="chat-log" class="chat-log"><div class="msg bot">Hello! I can help with basic civic complaint questions. Try asking about reporting an issue or checking status.</div></div><div class="chat-row"><input class="chat-input" id="chat-message" placeholder="Type your question..."><button class="btn" id="send-chat">Send</button></div></div></section>
+
+</main></div>
+<script>
+let issueData=[],dashboardData={};let overviewMap=null,hotspotMap=null;
+const pretty=s=>(s||'').replaceAll('_',' ');
+let issueBounds=null;
+
+// --- Safe rendering helpers -------------------------------------------------
+// Every untrusted value (complaint text, agency/department names, chatbot
+// replies) is written with textContent/createTextNode, never as HTML.
+function textValue(value,fallback='Not recorded'){
+  if(value===null||value===undefined) return fallback;
+  const text=String(value).trim();
+  return text===''?fallback:text;
+}
+
+function pill(label,kind){
+  const span=document.createElement('span');
+  span.className=kind==='historical'?'pill Hist':'pill Live';
+  span.textContent=label;
+  return span;
+}
+
+function textCell(value,{bold=false,fallback='Not recorded'}={}){
+  const td=document.createElement('td');
+  if(bold){
+    const b=document.createElement('b');
+    b.textContent=textValue(value,fallback);
+    td.appendChild(b);
+  }else{
+    td.textContent=textValue(value,fallback);
+  }
+  return td;
+}
+
+function element(tag,className,value){
+  const node=document.createElement(tag);
+  if(className) node.className=className;
+  if(value!==undefined) node.textContent=textValue(value,'');
+  return node;
+}
+
+function lineBreak(parent){
+  parent.appendChild(document.createElement('br'));
+}
+
+function appendText(parent,value,fallback='Not recorded'){
+  parent.appendChild(document.createTextNode(textValue(value,fallback)));
+}
+
+function formatCoord(value){
+  const n=Number(value);
+  return Number.isFinite(n)?n.toFixed(5):'Not available';
+}
+
+
+function sourceId(x){
+  return x.is_historical
+    ? (x.source_record_id ?? 'Not available')
+    : (x.ticket ?? 'Not available');
+}
+
+function emptyTableRow(colspan,message){
+  const tr=document.createElement('tr');
+  const td=document.createElement('td');
+  td.colSpan=colspan;
+  td.className='muted';
+  td.textContent=message;
+  tr.appendChild(td);
+  return tr;
+}
+
+function renderRows(items,target,full=false){
+  const rows=[...items].sort(
+    (a,b)=>(Date.parse(b.created_at||'')||0)-(Date.parse(a.created_at||'')||0)
+  );
+
+  const tbody=document.querySelector(target);
+  const fragment=document.createDocumentFragment();
+
+  if(!rows.length){
+    fragment.appendChild(emptyTableRow(
+      full?7:5,
+      'No historical complaint records are available in this installation.'
+    ));
+    tbody.replaceChildren(fragment);
+    return;
+  }
+
+  rows.forEach(x=>{
+    const tr=document.createElement('tr');
+    tr.appendChild(textCell(sourceId(x),{bold:true,fallback:'Not available'}));
+
+    const recordCell=document.createElement('td');
+    recordCell.appendChild(
+      x.is_historical ? pill('Historical','historical') : pill('Live','live')
+    );
+    tr.appendChild(recordCell);
+
+    tr.appendChild(textCell(x.title));
+    tr.appendChild(textCell(pretty(x.category)));
+    tr.appendChild(textCell(pretty(x.source_status || x.status)));
+
+    if(full){
+      tr.appendChild(textCell(x.source_agency,{fallback:'Not recorded in source'}));
+      tr.appendChild(textCell(x.department,{fallback:'Unassigned - agency not recorded'}));
+    }
+
+    fragment.appendChild(tr);
+  });
+
+  tbody.replaceChildren(fragment);
+}
+
+async function renderDepartments(){
+  const response=await fetch('/api/v1/analytics/departments');
+  if(!response.ok) throw new Error('Source agency summary API failed.');
+  const data=await response.json();
+  const rows=data.departments||[];
+
+  const tbody=document.querySelector('#department-table');
+  const fragment=document.createDocumentFragment();
+
+  if(!rows.length){
+    fragment.appendChild(emptyTableRow(
+      6,
+      'No historical source-agency records are available in this installation.'
+    ));
+    tbody.replaceChildren(fragment);
+    document.querySelector('#department-unassigned').textContent=
+      'No historical source-agency records are available in this installation.';
+    document.querySelector('#analytics-departments').textContent='0';
+    return;
+  }
+
+  rows.forEach(x=>{
+    const tr=document.createElement('tr');
+    tr.appendChild(textCell(x.source_agency || x.name,{fallback:'Not recorded in source'}));
+    ['records','reported','in_progress','resolved','rejected'].forEach(key=>{
+      tr.appendChild(textCell(x[key],{fallback:'0'}));
+    });
+    fragment.appendChild(tr);
+  });
+
+  tbody.replaceChildren(fragment);
+
+  document.querySelector('#department-unassigned').textContent=
+    `${data.unassigned_records||0} records have no source agency recorded and remain unassigned.`;
+
+  document.querySelector('#analytics-departments').textContent=rows.length;
+}
+
+function renderAnalytics(){
+  const cats=dashboardData.category_breakdown||[];
+  document.querySelector('#analytics-categories').textContent=cats.length;
+
+  const container=document.querySelector('#analytics-breakdown');
+  if(!cats.length){
+    container.replaceChildren(
+      element('div','muted','No historical category analytics are available in this installation.')
+    );
+    return;
+  }
+
+  const max=Math.max(1,...cats.map(c=>Number(c.count)||0));
+  const fragment=document.createDocumentFragment();
+
+  [...cats].sort((a,b)=>(Number(b.count)||0)-(Number(a.count)||0)).forEach(x=>{
+    const block=document.createElement('div');
+    block.style.margin='12px 0';
+    block.appendChild(element('b',null,pretty(x.category)));
+
+    const bar=element('div','bar');
+    bar.style.marginTop='6px';
+    const fill=element('div','fill');
+    fill.style.width=`${Math.max(3,(Number(x.count)||0)/max*100)}%`;
+    bar.appendChild(fill);
+    block.appendChild(bar);
+
+    block.appendChild(element('div','muted',`${Number(x.count)||0} complaints`));
+    fragment.appendChild(block);
+  });
+
+  container.replaceChildren(fragment);
+}
+
+function initMap(id,center=[12.9716,77.5946]){const m=L.map(id).setView(center,12);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'}).addTo(m);return m;}
+const BENGALURU_CENTER=[12.9716,77.5946];
+
+function recordPill(x){
+  return x.is_historical
+    ? pill('Historical Bengaluru','historical')
+    : pill('Live submission','live');
+}
+
+function issuePopup(x){
+  const popup=document.createElement('div');
+  popup.appendChild(element('b',null,`Source record: ${sourceId(x)}`));
+  lineBreak(popup);
+  popup.appendChild(recordPill(x));
+  lineBreak(popup);
+  appendText(popup,x.title);
+  lineBreak(popup);
+  appendText(popup,pretty(x.category));
+  lineBreak(popup);
+  appendText(popup,pretty(x.source_status||x.status));
+  return popup;
+}
+
+function hotspotPopup(h){
+  const popup=document.createElement('div');
+  popup.appendChild(element('b',null,`Geographic cluster #${textValue(h.cluster_id,'Not available')}`));
+  lineBreak(popup);
+  appendText(popup,`${Number(h.issue_count)||0} complaints`,'0 complaints');
+  lineBreak(popup);
+  appendText(popup,(h.categories||[]).map(pretty).join(', '));
+  return popup;
+}
+
+function renderMaps(){
+  if(!overviewMap) overviewMap=initMap('overview-map');
+  if(!hotspotMap) hotspotMap=initMap('hotspot-map');
+
+  [overviewMap,hotspotMap].forEach(m=>{
+    m.eachLayer(layer=>{
+      if(layer instanceof L.CircleMarker || layer instanceof L.Circle){
+        layer.remove();
+      }
+    });
+  });
+
+  // Genuine coordinates returned by /api/v1/issues/dashboard only.
+  const points=issueData.filter(
+    x=>Number.isFinite(Number(x.lat)) && Number.isFinite(Number(x.lng))
+  );
+  // Keep the map focused on the historical Bengaluru dataset it presents.
+  const historicalPoints=points.filter(x=>x.is_historical);
+  const focusPoints=historicalPoints.length?historicalPoints:points;
+
+  if(focusPoints.length){
+    issueBounds=L.latLngBounds(focusPoints.map(x=>[Number(x.lat),Number(x.lng)]));
+    overviewMap.fitBounds(issueBounds.pad(0.1));
+    hotspotMap.fitBounds(issueBounds.pad(0.1));
+
+    points.slice(0,500).forEach(x=>{
+      L.circleMarker([Number(x.lat),Number(x.lng)],{radius:4,weight:1})
+        .bindPopup(issuePopup(x))
+        .addTo(overviewMap);
+    });
+  }else{
+    issueBounds=null;
+    overviewMap.setView(BENGALURU_CENTER,11);
+    hotspotMap.setView(BENGALURU_CENTER,11);
+  }
+
+  const hs=dashboardData.hotspots||[];
+  hs.forEach(h=>{
+    const opts={
+      radius:Math.max(80,Math.min(350,60+h.issue_count*12)),
+      color:'#dc2626',fillColor:'#ef4444',fillOpacity:0.12,weight:2
+    };
+    L.circle([h.center_lat,h.center_lon],opts)
+      .bindPopup(hotspotPopup(h))
+      .addTo(overviewMap);
+
+    L.circle([h.center_lat,h.center_lon],opts)
+      .bindPopup(hotspotPopup(h))
+      .addTo(hotspotMap);
+  });
+}
+
+async function load(){
+  try{
+    const dashboardResponse=await fetch('/api/v1/analytics/dashboard');
+    if(!dashboardResponse.ok) throw new Error('Analytics request failed.');
+    dashboardData=await dashboardResponse.json();
+
+    const issueResponse=await fetch('/api/v1/issues/dashboard?limit=500');
+    if(!issueResponse.ok) throw new Error('Complaint request failed.');
+    issueData=await issueResponse.json();
+
+    document.querySelector('#total').textContent=dashboardData.total_issues;
+    document.querySelector('#open').textContent=dashboardData.open_issues;
+
+    const hasHistoricalRecords=
+      Number(dashboardData.total_issues)>0 || issueData.length>0;
+    const emptyBanner=document.querySelector('#empty-state-banner');
+    if(emptyBanner){
+      emptyBanner.hidden=hasHistoricalRecords;
+    }
+
+    document.querySelector('#resolved').textContent=
+      dashboardData.resolved_this_week==null
+        ? 'Not available' : dashboardData.resolved_this_week;
+
+    document.querySelector('#avg').textContent=
+      dashboardData.avg_resolution_hours==null
+        ? 'Not available' : `${dashboardData.avg_resolution_hours}h`;
+
+    const cats=dashboardData.category_breakdown||[];
+    const max=Math.max(1,...cats.map(x=>Number(x.count)||0));
+
+    const barsContainer=document.querySelector('#bars');
+    const barsFragment=document.createDocumentFragment();
+    if(!cats.length){
+      barsFragment.appendChild(
+        element('div','muted','No historical category data is available in this installation.')
+      );
+    }else{
+      [...cats].sort((a,b)=>(Number(b.count)||0)-(Number(a.count)||0)).forEach(x=>{
+        const row=element('div','barrow');
+        row.appendChild(element('span',null,pretty(x.category)));
+        const bar=element('div','bar');
+        const fill=element('div','fill');
+        fill.style.width=`${Math.max(3,(Number(x.count)||0)/max*100)}%`;
+        bar.appendChild(fill);
+        row.appendChild(bar);
+        row.appendChild(element('b',null,String(Number(x.count)||0)));
+        barsFragment.appendChild(row);
+      });
+    }
+    barsContainer.replaceChildren(barsFragment);
+
+    renderRows(issueData.slice(0,10),'#overview-issues');
+    renderRows(issueData,'#all-issues',true);
+
+    const note=document.querySelector('#issue-data-note');
+    if(note){
+      note.textContent=issueData.length
+        ? `Showing the latest ${issueData.length} historical Bengaluru records returned by the API. Total records in database: ${dashboardData.total_issues}.`
+        : 'No historical complaint records are configured. This installation starts with an empty database; no records are fabricated.';
+    }
+
+    await renderDepartments();
+    renderAnalytics();
+
+    const hotspotList=document.querySelector('#hotspot-list');
+    const hotspots=dashboardData.hotspots||[];
+    if(!hotspots.length){
+      hotspotList.replaceChildren(
+        element(
+          'div',
+          'muted',
+          hasHistoricalRecords
+            ? 'No geographic cluster meets the current threshold.'
+            : 'No geographic complaint clusters are available because no historical records are configured.'
+        )
+      );
+    }else{
+      const hotspotFragment=document.createDocumentFragment();
+      hotspots.forEach(h=>{
+        const block=document.createElement('div');
+        block.style.padding='12px 0';
+        block.style.borderBottom='1px solid #edf1f5';
+        block.appendChild(element('b',null,`Geographic cluster #${textValue(h.cluster_id,'Not available')}`));
+        lineBreak(block);
+
+        const muted=element('span','muted');
+        muted.appendChild(document.createTextNode(
+          `${Number(h.issue_count)||0} complaints · ${(h.categories||[]).map(pretty).join(', ')||'Not recorded'}`
+        ));
+        lineBreak(muted);
+        muted.appendChild(document.createTextNode(
+          `Center: ${formatCoord(h.center_lat)}, ${formatCoord(h.center_lon)}`
+        ));
+        block.appendChild(muted);
+        hotspotFragment.appendChild(block);
+      });
+      hotspotList.replaceChildren(hotspotFragment);
+    }
+
+    setTimeout(()=>{
+      renderMaps();
+      if(overviewMap) overviewMap.invalidateSize(true);
+    },250);
+
+  }catch(e){
+    console.error(e);
+  }
+}
+
+function switchPage(page){
+  document.querySelectorAll('.page').forEach(
+    x=>x.classList.toggle('active',x.id===page)
+  );
+  document.querySelectorAll('.nav').forEach(
+    x=>x.classList.toggle('active',x.dataset.page===page)
+  );
+
+  const names={
+    overview:'Authority Dashboard',
+    issues:'Historical Complaints',
+    hotspots:'Geographic Complaint Clusters',
+    departments:'Source Agency Distribution',
+    analytics:'Analytics',
+    support:'Citizen Support'
+  };
+  document.querySelector('#page-title').textContent=names[page]||'UIMRS';
+
+  if(page==='hotspots' && hotspotMap){
+    setTimeout(()=>{
+      hotspotMap.invalidateSize(true);
+      if(issueBounds && issueBounds.isValid()){
+        hotspotMap.fitBounds(issueBounds.pad(0.1));
+      }else{
+        hotspotMap.setView(BENGALURU_CENTER,11);
+      }
+    },250);
+  }
+  if(page==='overview' && overviewMap){
+    setTimeout(()=>{
+      overviewMap.invalidateSize(true);
+      if(issueBounds && issueBounds.isValid()){
+        overviewMap.fitBounds(issueBounds.pad(0.1));
+      }else{
+        overviewMap.setView(BENGALURU_CENTER,11);
+      }
+    },250);
+  }
+}
+
+document.querySelectorAll('.nav').forEach(x=>x.addEventListener('click',()=>switchPage(x.dataset.page)));document.querySelector('#issue-search').addEventListener('input',filterIssues);document.querySelector('#status-filter').addEventListener('change',filterIssues);document.querySelector('#clear-filter').addEventListener('click',()=>{document.querySelector('#issue-search').value='';document.querySelector('#status-filter').value='';filterIssues();});
+function filterIssues(){
+  const q=document.querySelector('#issue-search').value.toLowerCase();
+  const s=document.querySelector('#status-filter').value;
+  renderRows(
+    issueData.filter(x=>
+      (!q || `${x.source_record_id||''} ${x.title||''} ${x.category||''} ${x.source_agency||''}`.toLowerCase().includes(q))
+      && (!s || x.status===s)
+    ),
+    '#all-issues',
+    true
+  );
+}
+
+function appendChatMessage(kind,message){
+  const log=document.querySelector('#chat-log');
+  const div=document.createElement('div');
+  div.className=`msg ${kind}`;
+  div.textContent=textValue(message,'I could not process that request.');
+  log.appendChild(div);
+  log.scrollTop=log.scrollHeight;
+}
+
+async function sendChat(){
+  const input=document.querySelector('#chat-message');
+  const text=input.value.trim();
+  if(!text)return;
+  appendChatMessage('user',text);
+  input.value='';
+  try{
+    const r=await fetch('/api/v1/chatbot/message',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text})});
+    const d=await r.json();
+    appendChatMessage('bot',d.response||'I could not process that request.');
+  }catch(e){
+    appendChatMessage('bot','Chatbot service is unavailable right now.');
+  }
+}
+document.querySelector('#send-chat').addEventListener('click',sendChat);document.querySelector('#chat-message').addEventListener('keydown',e=>{if(e.key==='Enter')sendChat();});load();
+</script>
+</body></html>
