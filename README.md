@@ -491,17 +491,17 @@ production municipal service and must not be presented as one.
   committed to Git or shared in screenshots.
 - The software is provided without warranty. See the licence status below.
 
-## Licence status
+## License
 
-**No open-source licence has been added to this repository.** The academic owner must
-choose and document a licence before publishing. Do not assume that public visibility
-grants permission to reuse the code.
+This project is licensed under the MIT License.
+See the [LICENSE](LICENSE) file for details.
 
-Third-party dependencies retain their own licences (for example MIT, BSD-3-Clause,
-Apache-2.0). The Bengaluru model and the historical complaint dataset are **not**
-redistributed because permission could not be established. See
-[`docs/MODEL_AND_DATA_LICENSING.md`](docs/MODEL_AND_DATA_LICENSING.md) for the full
-analysis and the owner decisions that remain.
+The MIT License applies to the project code owned by the contributors.
+Third-party components, datasets, and separately licensed materials remain
+subject to their respective terms.
+
+The Bengaluru historical dataset and trained classifier are not included
+in this public release.
 
 ## Documentation
 
