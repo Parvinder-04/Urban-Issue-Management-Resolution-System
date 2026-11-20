@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UIMRS — Intelligent Urban Issue Management &amp; Resolution System</title>
+<meta name="description" content="UIMRS is a civic issue reporting and resolution platform. Citizens report Gurugram civic issues, verified departments receive routed complaints, and administrators oversee resolution with full audit history.">
+<meta name="theme-color" content="#0a1f33">
+<link rel="stylesheet" href="/assets/uimrs.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230a1f33'/%3E%3Cpath d='M18 22h28M18 32h28M18 42h18' stroke='%232dd4bf' stroke-width='6' stroke-linecap='round'/%3E%3C/svg%3E">
+</head>
+<body class="uimrs" data-nav-current="home">
+
+<a class="uimrs-skip" href="#main">Skip to main content</a>
+
+<!-- ============================ NAVIGATION ============================ -->
+<header class="uimrs-nav">
+  <div class="uimrs-nav-inner">
+    <a class="uimrs-brand" href="/" aria-label="UIMRS home">
+      <span class="uimrs-brand-mark" aria-hidden="true">U</span>
+      <span>UIMRS<small>Urban Issue Management</small></span>
+    </a>
+    <button class="uimrs-nav-toggle" type="button" data-uimrs-nav-toggle aria-expanded="false" aria-controls="uimrs-nav-links" aria-label="Toggle navigation menu">&#9776;</button>
+    <nav class="uimrs-nav-links" id="uimrs-nav-links" data-uimrs-nav-links aria-label="Primary">
+      <a href="/" data-nav="home">Home</a>
+      <a href="/dashboard" data-nav="dashboard">Dashboard</a>
+      <a href="/citizen" data-nav="citizen">Citizen Portal</a>
+      <a href="/officer" data-nav="officer">Officer Portal</a>
+      <a href="/admin" data-nav="admin">Admin Portal</a>
+      <a href="/analytics" data-nav="analytics">Analytics</a>
+      <a href="/gallery" data-nav="gallery">3D Gallery</a>
+      <a href="#future">Future Development</a>
+      <a class="uimrs-nav-cta" href="/citizen">Report an issue</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+<!-- ============================ HERO ============================ -->
+<section class="uimrs-hero">
+  <div class="uimrs-wrap">
+    <div class="uimrs-hero-grid">
+      <div>
+        <p class="uimrs-eyebrow">Civic issue management platform</p>
+        <h1 class="uimrs-h1">Report a civic issue.<br><span>Track it to resolution.</span></h1>
+        <p class="uimrs-lead">
+          UIMRS connects citizens, municipal officers and administrators in one
+          auditable workflow. A citizen files a Gurugram complaint, the system
+          classifies and prioritises it, a verified department receives it, and
+          every status change is recorded.
+        </p>
+        <div class="uimrs-hero-actions">
+          <a class="uimrs-btn primary" href="/citizen">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            Report an issue
+          </a>
+          <a class="uimrs-btn ghost" href="/dashboard">View public dashboard</a>
+          <a class="uimrs-btn ghost" href="/gallery">Explore 3D gallery</a>
+        </div>
+        <div class="uimrs-hero-meta">
+          <span><i class="uimrs-dot" aria-hidden="true"></i> Gurugram — primary operational city</span>
+          <span>Bengaluru historical data — read-only</span>
+          <span>No live municipal API integration</span>
+        </div>
+      </div>
+
+      <aside class="uimrs-hero-panel" aria-label="Complaint lifecycle summary">
+        <div class="uimrs-hero-panel-head">
+          <b>Complaint lifecycle</b>
+          <span class="uimrs-live-pill"><i class="uimrs-dot" aria-hidden="true"></i> Live workflow</span>
+        </div>
+        <div class="uimrs-flow">
+          <div class="uimrs-flow-row">
+            <span class="uimrs-flow-ico" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+            </span>
+            <span><b>Citizen submits</b><small>Category, description, map location, optional photo</small></span>
+            <span class="uimrs-flow-tag">Citizen</span>
+          </div>
+          <div class="uimrs-flow-row">
+            <span class="uimrs-flow-ico" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h10M4 18h7"/></svg>
+            </span>
+            <span><b>Classified &amp; prioritised</b><small>Indian keyword rules plus an explainable heuristic</small></span>
+            <span class="uimrs-flow-tag">Rules</span>
+          </div>
+          <div class="uimrs-flow-row">
+            <span class="uimrs-flow-ico" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M6 21V8l6-4 6 4v13"/><path d="M10 21v-6h4v6"/></svg>
+            </span>
+            <span><b>Routed to a department</b><small>Verified directory, manual review when jurisdiction is unclear</small></span>
+            <span class="uimrs-flow-tag amber">Review</span>
+          </div>
+          <div class="uimrs-flow-row">
+            <span class="uimrs-flow-ico" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m4 12 5 5L20 6"/></svg>
+            </span>
+            <span><b>Resolved &amp; audited</b><small>Status history, resolution notes, administrative audit log</small></span>
+            <span class="uimrs-flow-tag">Officer</span>
+          </div>
+        </div>
+        <p class="uimrs-small" style="margin:14px 0 0;color:#9fc0d4">
+          Status changes are recorded, not overwritten. Historical Bengaluru
+          records are never mixed into this live workflow.
+        </p>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ TRUST STRIP ============================ -->
+<section class="uimrs-trust" aria-label="Platform facts">
+  <div class="uimrs-wrap">
+    <div class="uimrs-trust-inner">
+      <div class="uimrs-trust-item">
+        <b>Gurugram, Haryana</b>
+        <span>Primary city for live UIMRS submissions</span>
+      </div>
+      <div class="uimrs-trust-item">
+        <b>Verified department directory</b>
+        <span>Routing only to recorded departments and contacts</span>
+      </div>
+      <div class="uimrs-trust-item">
+        <b>Explainable priority</b>
+        <span>Heuristic score with written reasons, not a probability</span>
+      </div>
+      <div class="uimrs-trust-item">
+        <b>Role-based access</b>
+        <span>Citizen, officer and administrator permissions enforced by the API</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ HOW IT WORKS ============================ -->
+<section class="uimrs-section" id="how-it-works">
+  <div class="uimrs-wrap">
+    <p class="uimrs-eyebrow">How it works</p>
+    <h2 class="uimrs-h2">One complaint, four accountable stages</h2>
+    <p class="uimrs-lead">Every step below is implemented in the running application. There are no simulated stages and no hidden manual edits.</p>
+    <div class="uimrs-steps uimrs-mt-3">
+      <article class="uimrs-step">
+        <h3>Submit</h3>
+        <p>Register or sign in, choose a category, describe the issue, pick the location on the map and attach optional evidence.</p>
+      </article>
+      <article class="uimrs-step">
+        <h3>Classify</h3>
+        <p>Gurugram text is classified with deterministic Indian keyword rules. The original text and the matched signals remain visible.</p>
+      </article>
+      <article class="uimrs-step">
+        <h3>Route</h3>
+        <p>Complaints are matched against the verified department directory. Ambiguous jurisdiction goes to manual administrative review with a written reason.</p>
+      </article>
+      <article class="uimrs-step">
+        <h3>Resolve</h3>
+        <p>Officers claim department-scoped work, update status with notes, and citizens follow the full history from their tracking ID.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ FEATURES ============================ -->
+<section class="uimrs-section alt" id="features">
+  <div class="uimrs-wrap">
+    <p class="uimrs-eyebrow">Core capabilities</p>
+    <h2 class="uimrs-h2">Built for accountability, not decoration</h2>
+    <p class="uimrs-lead">Each capability listed here is backed by an API contract and covered by the project test suite.</p>
+
+    <div class="uimrs-grid cols-3 uimrs-mt-3">
+      <article class="uimrs-card hover">
+        <span class="uimrs-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h10M4 18h7"/></svg>
+        </span>
+        <h3 class="uimrs-h3">Deterministic classification</h3>
+        <p class="uimrs-small uimrs-muted">Gurugram complaints are classified by Indian keyword rules with recorded confidence and alternatives. The classifier is rule-based and inspectable.</p>
+      </article>
+      <article class="uimrs-card hover">
+        <span class="uimrs-ico amber" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M5 8h14"/><circle cx="12" cy="12" r="9"/></svg>
+        </span>
+        <h3 class="uimrs-h3">Explainable priority</h3>
+        <p class="uimrs-small uimrs-muted">A transparent heuristic combines severity language, duplication and age. The reasons are stored with the complaint; the score is not a calibrated probability.</p>
+      </article>
+      <article class="uimrs-card hover">
+        <span class="uimrs-ico navy" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M6 21V8l6-4 6 4v13"/><path d="M10 21v-6h4v6"/></svg>
+        </span>
+        <h3 class="uimrs-h3">Verified routing</h3>
+        <p class="uimrs-small uimrs-muted">Departments come from a recorded directory with provenance. When no verified mapping exists the complaint stays unassigned instead of inventing a recipient.</p>
+      </article>
+      <article class="uimrs-card hover">
+        <span class="uimrs-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v4l3 2"/><circle cx="12" cy="12" r="9"/></svg>
+        </span>
+        <h3 class="uimrs-h3">Status history</h3>
+        <p class="uimrs-small uimrs-muted">Every transition is appended with actor, timestamp and comment. Citizens see the same history that officers and administrators rely on.</p>
+      </article>
+      <article class="uimrs-card hover">
+        <span class="uimrs-ico navy" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-4-4-6 6"/></svg>
+        </span>
+        <h3 class="uimrs-h3">Protected evidence images</h3>
+        <p class="uimrs-small uimrs-muted">Uploads are validated for type and size, stored on the server, and served only through an authorised endpoint. Images are quality-checked, not AI-recognised.</p>
+      </article>
+      <article class="uimrs-card hover">
+        <span class="uimrs-ico amber" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-6"/><path d="M9 3h6v6H9z"/></svg>
+        </span>
+        <h3 class="uimrs-h3">Append-only audit log</h3>
+        <p class="uimrs-small uimrs-muted">Administrative actions such as manual routing and officer management are written to a paginated audit log that is not editable from the interface.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ PORTALS ============================ -->
+<section class="uimrs-section" id="portals">
+  <div class="uimrs-wrap">
+    <p class="uimrs-eyebrow">Portals</p>
+    <h2 class="uimrs-h2">One system, three responsibilities</h2>
+    <p class="uimrs-lead">Sign-in is required for every portal that handles live complaint data. Access is enforced by database role, not by hiding buttons.</p>
+
+    <div class="uimrs-grid cols-2 uimrs-mt-3">
+      <a class="uimrs-portal" href="/citizen">
+        <div class="uimrs-portal-top">
+          <h3>Citizen Portal</h3>
+          <span class="role-pill open">Register or sign in</span>
+        </div>
+        <p>File a complaint, pick a location, attach evidence, get a tracking ID and follow every status update.</p>
+        <div class="uimrs-row uimrs-small">
+          <span class="uimrs-muted">Report &middot; My complaints &middot; History &middot; Profile</span>
+          <span class="uimrs-arrow" aria-hidden="true">&#8594;</span>
+        </div>
+      </a>
+      <a class="uimrs-portal" href="/officer">
+        <div class="uimrs-portal-top">
+          <h3>Officer Portal</h3>
+          <span class="role-pill auth">Officer role required</span>
+        </div>
+        <p>Work through a department-scoped queue, filter and claim complaints, update status and record resolution notes.</p>
+        <div class="uimrs-row uimrs-small">
+          <span class="uimrs-muted">Queue &middot; Claim &middot; Update status &middot; History</span>
+          <span class="uimrs-arrow" aria-hidden="true">&#8594;</span>
+        </div>
+      </a>
+      <a class="uimrs-portal" href="/admin">
+        <div class="uimrs-portal-top">
+          <h3>Admin Portal</h3>
+          <span class="role-pill auth">Administrator role required</span>
+        </div>
+        <p>Oversee live complaints, perform justified manual routing, manage officers and review the administrative audit log.</p>
+        <div class="uimrs-row uimrs-small">
+          <span class="uimrs-muted">Overview &middot; Routing &middot; Officers &middot; Audit log</span>
+          <span class="uimrs-arrow" aria-hidden="true">&#8594;</span>
+        </div>
+      </a>
+      <a class="uimrs-portal" href="/analytics">
+        <div class="uimrs-portal-top">
+          <h3>Analytics</h3>
+          <span class="role-pill open">Public historical</span>
+        </div>
+        <p>Explore historical Bengaluru aggregates in public. Live UIMRS analytics are shown only after an officer or administrator signs in.</p>
+        <div class="uimrs-row uimrs-small">
+          <span class="uimrs-muted">Category &middot; Priority &middot; Status &middot; City filters</span>
+          <span class="uimrs-arrow" aria-hidden="true">&#8594;</span>
+        </div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ DATA TRANSPARENCY ============================ -->
+<section class="uimrs-section alt" id="data">
+  <div class="uimrs-wrap">
+    <p class="uimrs-eyebrow">Data transparency</p>
+    <h2 class="uimrs-h2">Three record types, never blended</h2>
+    <p class="uimrs-lead">UIMRS separates imported historical data, live citizen submissions and synthetic evaluation records. Every chart and every table states which type it uses.</p>
+
+    <div class="uimrs-data-grid uimrs-mt-3">
+      <div class="uimrs-data-card live">
+        <span class="tag">Live UIMRS</span>
+        <h3 class="uimrs-h3">Gurugram submissions</h3>
+        <p>Filed by registered citizens through this application. Role-scoped: a citizen sees their own complaints, an officer sees their department, an administrator sees the municipality.</p>
+      </div>
+      <div class="uimrs-data-card hist">
+        <span class="tag">Historical — read-only</span>
+        <h3 class="uimrs-h3">Bengaluru imported records</h3>
+        <p>I Change My City / Janaagraha records imported for historical analysis. These rows are immutable in live workflows and are never counted as Gurugram model performance.</p>
+      </div>
+      <div class="uimrs-data-card eval">
+        <span class="tag">Evaluation only</span>
+        <h3 class="uimrs-h3">Synthetic test records</h3>
+        <p>Clearly labelled <b>[EVALUATION TEST]</b> records used to exercise workflows during evaluation. They are not municipal data and must not be read as real complaints.</p>
+      </div>
+    </div>
+
+    <div class="uimrs-note uimrs-mt-3">
+      <span aria-hidden="true">&#9432;</span>
+      <span><b>Note:</b> public analytics cover historical records only. Live complaint counts, locations and identifiers are available only to authenticated officers and administrators.</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ SCOPE ============================ -->
+<section class="uimrs-section" id="scope">
+  <div class="uimrs-wrap">
+    <p class="uimrs-eyebrow">Coverage and scope</p>
+    <h2 class="uimrs-h2">Where UIMRS operates today</h2>
+    <div class="uimrs-grid cols-2 uimrs-mt-2">
+      <div class="uimrs-card">
+        <h3 class="uimrs-h3">Gurugram, Haryana — primary city</h3>
+        <p class="uimrs-small uimrs-muted">
+          Live complaints are submitted directly to UIMRS for Gurugram. Locations
+          are validated against the configured municipal boundary before a
+          complaint is accepted.
+        </p>
+        <div class="uimrs-note grey uimrs-mt-1">
+          <span aria-hidden="true">&#9432;</span>
+          <span>There is no live MCG or GMDA API connection. Complaints are held in UIMRS and routed to recorded departments; they are not synchronised into a municipal system.</span>
+        </div>
+      </div>
+      <div class="uimrs-card">
+        <h3 class="uimrs-h3">Bengaluru, Karnataka — historical only</h3>
+        <p class="uimrs-small uimrs-muted">
+          Bengaluru appears only as imported, read-only historical data from I
+          Change My City / Janaagraha. It is displayed on the public dashboard and
+          in public analytics, clearly labelled as historical.
+        </p>
+        <div class="uimrs-note amber uimrs-mt-1">
+          <span aria-hidden="true">&#9432;</span>
+          <span>Historical Bengaluru ML results are not Gurugram model performance, and Bengaluru records cannot be edited through live complaint workflows.</span>
+        </div>
+      </div>
+    </div>
+    <p class="uimrs-small uimrs-muted uimrs-mt-2">
+      UIMRS is not a pan-India deployment. Coverage is limited to the cities
+      described above, and no other city is claimed.
+    </p>
+  </div>
+</section>
+
+<!-- ============================ 3D PREVIEW ============================ -->
+<section class="uimrs-section alt" id="gallery-preview">
+  <div class="uimrs-wrap">
+    <div class="uimrs-grid cols-2" style="align-items:center">
+      <div>
+        <p class="uimrs-eyebrow">3D issue gallery</p>
+        <h2 class="uimrs-h2">See the categories in three dimensions</h2>
+        <p class="uimrs-lead">
+          An interactive Three.js viewer presents the nine civic issue categories
+          as rotating, zoomable 3D models. It is an illustrative teaching aid for
+          the project, not AI image recognition and not a digital twin.
+        </p>
+        <div class="uimrs-row uimrs-mt-2">
+          <a class="uimrs-btn primary" href="/gallery">Open the 3D gallery</a>
+          <a class="uimrs-btn ghost" href="/analytics">See the analytics</a>
+        </div>
+        <p class="uimrs-small uimrs-muted uimrs-mt-2">
+          Requires a WebGL-capable browser. If WebGL is unavailable the gallery
+          shows a clear fallback message instead of a broken viewer.
+        </p>
+      </div>
+      <div class="uimrs-gallery-preview" role="img" aria-label="Illustration of the interactive 3D category gallery">
+        <span class="grid-floor" aria-hidden="true"></span>
+        <div class="preview-copy">
+          <div class="uimrs-cube-stack" aria-hidden="true">
+            <span class="uimrs-cube"></span>
+            <span class="uimrs-cube"></span>
+            <span class="uimrs-cube"></span>
+          </div>
+          <h3>Nine issue categories</h3>
+          <p>Road damage, garbage, streetlights, drainage, water supply, traffic, trees, illegal construction and public property.</p>
+          <a class="uimrs-btn dark" href="/gallery">Launch interactive viewer</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ FUTURE DEVELOPMENT ============================ -->
+<section class="uimrs-section uimrs-future" id="future">
+  <div class="uimrs-wrap">
+    <p class="uimrs-eyebrow">Future development</p>
+    <h2 class="uimrs-h2">Proposed, not yet implemented</h2>
+    <p class="uimrs-lead">The three items below are planned extensions of UIMRS. None of them is operational in the current release.</p>
+
+    <div class="uimrs-grid cols-3 uimrs-mt-3">
+      <article class="uimrs-future-card">
+        <span class="uimrs-future-badge">Future / Planned</span>
+        <span class="uimrs-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M6 21V8l6-4 6 4v13"/><path d="M10 21v-6h4v6"/></svg>
+        </span>
+        <h3>Real-Time Municipal Integration</h3>
+        <p>Integrate with verified municipal corporation and government systems to synchronise complaint registration, routing and resolution status. Today no such connection exists.</p>
+      </article>
+      <article class="uimrs-future-card">
+        <span class="uimrs-future-badge">Future / Planned</span>
+        <span class="uimrs-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v4M8 21h8"/></svg>
+        </span>
+        <h3>Multilingual Voice-Based Reporting</h3>
+        <p>Allow citizens to submit civic complaints through voice input and multiple Indian languages, improving accessibility for users who prefer not to type.</p>
+      </article>
+      <article class="uimrs-future-card">
+        <span class="uimrs-future-badge">Future / Planned</span>
+        <span class="uimrs-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>
+        </span>
+        <h3>Mobile Application and Notifications</h3>
+        <p>Develop dedicated Android and iOS applications with push notifications, complaint updates and convenient mobile access to the same UIMRS records.</p>
+      </article>
+    </div>
+
+    <div class="uimrs-note uimrs-mt-3" style="background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.14);color:#c7dced">
+      <span aria-hidden="true">&#9432;</span>
+      <span>These features are shown for planning context only. No button on this page starts them, and no current screen implies that they are available.</span>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ============================ FOOTER ============================ -->
+<footer class="uimrs-footer">
+  <div class="uimrs-wrap">
+    <div class="uimrs-footer-grid">
+      <div>
+        <div class="brand-line">UIMRS</div>
+        <p style="margin:0 0 12px;max-width:320px">
+          Intelligent Urban Issue Management &amp; Resolution System — a
+          final-year engineering project for accountable civic complaint
+          handling.
+        </p>
+        <p class="uimrs-small" style="margin:0;color:#7f9db0">
+          Gurugram is the primary operational city. Bengaluru historical records
+          are read-only. No live municipal API integration.
+        </p>
+      </div>
+      <div>
+        <h4>Portals</h4>
+        <a href="/citizen">Citizen Portal</a>
+        <a href="/officer">Officer Portal</a>
+        <a href="/admin">Admin Portal</a>
+        <a href="/dashboard">Public Dashboard</a>
+      </div>
+      <div>
+        <h4>Explore</h4>
+        <a href="/analytics">Analytics</a>
+        <a href="/gallery">3D Issue Gallery</a>
+        <a href="#future">Future Development</a>
+        <a href="#data">Data Transparency</a>
+      </div>
+      <div>
+        <h4>Project</h4>
+        <a href="/health">Service Health</a>
+        <a href="/ready">Readiness</a>
+        <a href="/docs">API Documentation</a>
+        <a href="#how-it-works">How It Works</a>
+      </div>
+    </div>
+    <div class="uimrs-footer-bottom">
+      <span>&copy; 2026 UIMRS. Academic project — not an official municipal service.</span>
+      <span>Priority is an explainable heuristic, not a calibrated probability.</span>
+    </div>
+  </div>
+</footer>
+
+<script src="/assets/uimrs-nav.js" defer></script>
+</body>
+</html>

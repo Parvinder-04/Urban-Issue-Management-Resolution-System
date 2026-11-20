@@ -189,7 +189,7 @@ class TestCitizenPortalRoute(CitizenPortalTestBase):
         self.assertIn("text/html", response.headers.get("content-type", ""))
 
     def test_historical_dashboard_route_is_unchanged(self):
-        response = self.client.get("/")
+        response = self.client.get("/dashboard")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.content, HISTORICAL_PAGE.read_bytes())
 

@@ -50,7 +50,7 @@ ALEMBIC_DIR = PROJECT_ROOT / "backend" / "alembic"
 BASELINE_REVISION = "0001_baseline"
 EXPLAINABILITY_REVISION = "0002_ai_explainability"
 DEPARTMENT_ROUTING_REVISION = "0003_department_routing"
-HEAD_REVISION = "0004_admin_audit_log"
+HEAD_REVISION = "0005_image_data_bytea"
 
 
 class MigrationError(RuntimeError):
@@ -96,18 +96,6 @@ def _check_integrity(database_url: str) -> None:
     path = sqlite_path_from_url(database_url)
     if path is not None and path.exists():
         check_sqlite_integrity(database_url)
-
-
-def _ensure_sqlite_parent(database_url: str) -> None:
-    """Create the parent directory for a new file-backed SQLite database.
-
-    SQLite will not create missing directories. This keeps a first-run
-    ``local_data/uimrs_public.db`` workflow working from a clean checkout
-    without weakening any schema or revision validation.
-    """
-    path = sqlite_path_from_url(database_url)
-    if path is not None:
-        path.parent.mkdir(parents=True, exist_ok=True)
 
 
 def _prepare_existing_unversioned(database_url: str, config: Config) -> MigrationResult:
@@ -206,7 +194,6 @@ def prepare_database(database_url: str | None = None) -> MigrationResult:
     recreated on an existing database.
     """
     url = database_url or resolve_database_url()
-    _ensure_sqlite_parent(url)
     _check_integrity(url)
     config = make_alembic_config(url)
 

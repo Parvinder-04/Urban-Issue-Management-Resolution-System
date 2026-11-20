@@ -5,8 +5,9 @@ Historical resolution metrics are unavailable when the source does not provide
 actual resolution timestamps. Hotspots are computed from recorded coordinates.
 """
 from datetime import datetime, timedelta
+from typing import Optional
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func, case
 
@@ -19,20 +20,65 @@ router = APIRouter(prefix="/analytics", tags=["analytics"])
 settings = get_settings()
 
 
+def _parse_filter_date(value: Optional[str], *, end_of_day: bool = False):
+    """Parse an optional ISO-8601 date/datetime filter into a naive datetime."""
+    if not value:
+        return None
+    cleaned = value.strip()
+    if not cleaned:
+        return None
+    try:
+        parsed = datetime.fromisoformat(cleaned.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=422,
+            detail="date_from and date_to must be ISO-8601 dates.",
+        ) from exc
+    if parsed.tzinfo is not None:
+        parsed = parsed.astimezone().replace(tzinfo=None)
+    if len(cleaned) == 10 and end_of_day:
+        parsed = parsed + timedelta(days=1) - timedelta(microseconds=1)
+    return parsed
+
+
+def _historical_filters(
+    *, date_from: Optional[str], date_to: Optional[str]
+):
+    """Return the SQLAlchemy filters shared by every public aggregate."""
+    filters = [models.Issue.is_historical == True]  # noqa: E712
+    start = _parse_filter_date(date_from)
+    end = _parse_filter_date(date_to, end_of_day=True)
+    if start is not None and end is not None and start > end:
+        raise HTTPException(
+            status_code=422, detail="date_from must not be later than date_to."
+        )
+    if start is not None:
+        filters.append(models.Issue.created_at >= start)
+    if end is not None:
+        filters.append(models.Issue.created_at <= end)
+    return filters
+
+
 @router.get("/dashboard", response_model=schemas.DashboardSummary)
-def dashboard_summary(db: Session = Depends(get_db)):
+def dashboard_summary(
+    date_from: Optional[str] = Query(default=None, max_length=40),
+    date_to: Optional[str] = Query(default=None, max_length=40),
+    db: Session = Depends(get_db),
+):
     """Public historical aggregate.
 
     All queries are restricted to historical records so public analytics cannot
     reveal live citizen submissions, counts or precise reporting coordinates.
+    Optional ``date_from``/``date_to`` ISO-8601 filters narrow the historical
+    window; they never widen access to live rows.
     """
-    historical = models.Issue.is_historical == True  # noqa: E712 - SQLAlchemy expression
+    historical = _historical_filters(date_from=date_from, date_to=date_to)
 
-    total_issues = db.query(models.Issue).filter(historical).count()
+    total_issues = db.query(models.Issue).filter(*historical).count()
 
     open_issues = (
         db.query(models.Issue)
-        .filter(historical)
+        .filter(*historical)
         .filter(models.Issue.status.notin_([
             models.IssueStatus.RESOLVED,
             models.IssueStatus.REJECTED,
@@ -44,7 +90,7 @@ def dashboard_summary(db: Session = Depends(get_db)):
     # Calculate resolution metrics only when actual timestamps exist.
     resolved_issues = (
         db.query(models.Issue)
-        .filter(historical)
+        .filter(*historical)
         .filter(
             models.Issue.status == models.IssueStatus.RESOLVED,
             models.Issue.resolved_at.isnot(None),
@@ -69,7 +115,7 @@ def dashboard_summary(db: Session = Depends(get_db)):
 
     category_rows = (
         db.query(models.Issue.category, func.count(models.Issue.id))
-        .filter(historical)
+        .filter(*historical)
         .group_by(models.Issue.category)
         .all()
     )
@@ -97,7 +143,7 @@ def dashboard_summary(db: Session = Depends(get_db)):
 
     open_rows = (
         db.query(models.Issue)
-        .filter(historical)
+        .filter(*historical)
         .filter(models.Issue.status.notin_([
             models.IssueStatus.RESOLVED,
             models.IssueStatus.REJECTED,
@@ -137,7 +183,12 @@ def dashboard_summary(db: Session = Depends(get_db)):
 
 
 @router.get("/departments")
-def department_summary(db: Session = Depends(get_db)):
+def department_summary(
+    date_from: Optional[str] = Query(default=None, max_length=40),
+    date_to: Optional[str] = Query(default=None, max_length=40),
+    db: Session = Depends(get_db),
+):
+    historical = _historical_filters(date_from=date_from, date_to=date_to)
     # Group category-specific department rows by the actual recorded agency.
     rows = (
         db.query(
@@ -159,7 +210,7 @@ def department_summary(db: Session = Depends(get_db)):
             )).label("rejected"),
         )
         .join(models.Issue, models.Issue.department_id == models.Department.id)
-        .filter(models.Issue.is_historical == True)  # noqa: E712 - SQLAlchemy expression
+        .filter(*historical)
         .group_by(
             models.Department.name,
             models.Department.city,
@@ -172,7 +223,7 @@ def department_summary(db: Session = Depends(get_db)):
     unassigned_rows = (
         db.query(models.Issue.status, func.count(models.Issue.id))
         .filter(models.Issue.department_id.is_(None))
-        .filter(models.Issue.is_historical == True)  # noqa: E712 - SQLAlchemy expression
+        .filter(*historical)
         .group_by(models.Issue.status)
         .all()
     )
@@ -202,7 +253,11 @@ def department_summary(db: Session = Depends(get_db)):
 
 
 @router.get("/heatmap")
-def heatmap_points(db: Session = Depends(get_db)):
+def heatmap_points(
+    date_from: Optional[str] = Query(default=None, max_length=40),
+    date_to: Optional[str] = Query(default=None, max_length=40),
+    db: Session = Depends(get_db),
+):
     """Return recorded historical open-issue coordinates.
 
     Live citizen submissions are excluded so public endpoints never disclose
@@ -211,7 +266,7 @@ def heatmap_points(db: Session = Depends(get_db)):
     """
     issues = (
         db.query(models.Issue)
-        .filter(models.Issue.is_historical == True)  # noqa: E712 - SQLAlchemy expression
+        .filter(*_historical_filters(date_from=date_from, date_to=date_to))
         .filter(models.Issue.status.notin_([
             models.IssueStatus.RESOLVED,
             models.IssueStatus.REJECTED,

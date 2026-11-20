@@ -126,8 +126,8 @@ class TestUserRegistration(BaseAuthTestCase):
 
     def test_register_citizen_success(self):
         payload = schemas.UserCreate(
-            name="Test Citizen",
-            email="test.citizen@example.com",
+            name="Aakash Verma",
+            email="aakash.verma@example.com",
             phone="9876543210",
             password="SecurePassword@123",
             preferred_language="hi",
@@ -135,8 +135,8 @@ class TestUserRegistration(BaseAuthTestCase):
         user = register(payload, db=self.db)
 
         self.assertIsNotNone(user.id)
-        self.assertEqual(user.name, "Test Citizen")
-        self.assertEqual(user.email, "test.citizen@example.com")
+        self.assertEqual(user.name, "Aakash Verma")
+        self.assertEqual(user.email, "aakash.verma@example.com")
         self.assertEqual(user.role, models.UserRole.CITIZEN)
         self.assertEqual(user.preferred_language, "hi")
         # Ensure password was hashed with native bcrypt

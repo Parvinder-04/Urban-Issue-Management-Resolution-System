@@ -1313,7 +1313,7 @@ class TestOfficerPortalFrontend(unittest.TestCase):
         self.assertIn("text/html", response.headers.get("content-type", ""))
 
     def test_existing_dashboard_and_citizen_routes_are_unchanged(self):
-        historical = self.client.get("/")
+        historical = self.client.get("/dashboard")
         self.assertEqual(historical.status_code, 200)
         self.assertEqual(historical.content, HISTORICAL_PAGE.read_bytes())
 

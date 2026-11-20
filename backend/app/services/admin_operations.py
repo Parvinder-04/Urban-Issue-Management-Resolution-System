@@ -57,6 +57,16 @@ def _category_value(category) -> str | None:
     return category.value if isinstance(category, models.IssueCategory) else str(category)
 
 
+def _priority_value(priority) -> str:
+    if priority is None:
+        return "Unscored"
+    return (
+        priority.value
+        if isinstance(priority, models.PriorityLevel)
+        else str(priority)
+    )
+
+
 def department_out(department: models.Department) -> schemas.AdminDepartmentOut:
     return schemas.AdminDepartmentOut(
         id=department.id,
@@ -424,32 +434,59 @@ def leave_issue_unassigned(
 # Overview
 # ---------------------------------------------------------------------------
 def _apply_scope_filters(
-    query: Query, *, city: str | None, department_id: str | None
+    query: Query,
+    *,
+    city: str | None,
+    department_id: str | None,
+    start=None,
+    end=None,
 ) -> Query:
     if city:
         query = query.filter(models.Issue.city == city)
     if department_id:
         query = query.filter(models.Issue.department_id == department_id)
+    if start is not None:
+        query = query.filter(models.Issue.created_at >= start)
+    if end is not None:
+        query = query.filter(models.Issue.created_at <= end)
     return query
 
 
 def build_overview(
-    db: Session, *, city: str | None = None, department_id: str | None = None
+    db: Session,
+    *,
+    city: str | None = None,
+    department_id: str | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
 ) -> schemas.AdminOverviewOut:
     """Build operational and historical sections from separate queries.
 
     Historical Bengaluru rows never enter the live section, and live Gurugram
     counts are never presented as historical results.
+
+    ``date_from``/``date_to`` are optional ISO-8601 filters on ``created_at``.
+    They are applied consistently to every section so a filtered overview can
+    never mix two different time windows.
     """
+    start = parse_audit_datetime(date_from)
+    end = parse_audit_datetime(date_to, end_of_day=True)
+    if start is not None and end is not None and start > end:
+        raise AdminOperationError("date_from must not be later than date_to.", 422)
+
     live = _apply_scope_filters(
         db.query(models.Issue).filter(models.Issue.is_historical.is_(False)),
         city=city,
         department_id=department_id,
+        start=start,
+        end=end,
     )
     historical = _apply_scope_filters(
         db.query(models.Issue).filter(models.Issue.is_historical.is_(True)),
         city=city,
         department_id=department_id,
+        start=start,
+        end=end,
     )
 
     total_live = live.count()
@@ -496,6 +533,10 @@ def build_overview(
         workload_rows = workload_rows.filter(
             models.Department.id == department_id
         )
+    if start is not None:
+        workload_rows = workload_rows.filter(models.Issue.created_at >= start)
+    if end is not None:
+        workload_rows = workload_rows.filter(models.Issue.created_at <= end)
     workload_rows = (
         workload_rows.group_by(
             models.Department.id,
@@ -528,6 +569,30 @@ def build_overview(
         for row in city_rows
     ]
 
+    live_category_rows = (
+        live.with_entities(models.Issue.category, func.count(models.Issue.id))
+        .group_by(models.Issue.category)
+        .order_by(func.count(models.Issue.id).desc())
+        .all()
+    )
+    live_category_distribution = [
+        {"category": _category_value(row[0]), "count": int(row[1])}
+        for row in live_category_rows
+    ]
+
+    live_priority_rows = (
+        live.with_entities(
+            models.Issue.priority_level, func.count(models.Issue.id)
+        )
+        .group_by(models.Issue.priority_level)
+        .order_by(func.count(models.Issue.id).desc())
+        .all()
+    )
+    live_priority_distribution = [
+        {"priority": _priority_value(row[0]), "count": int(row[1])}
+        for row in live_priority_rows
+    ]
+
     total_historical = historical.count()
     agency_rows = (
         historical.with_entities(
@@ -548,7 +613,10 @@ def build_overview(
 
     return schemas.AdminOverviewOut(
         filters=schemas.AdminOverviewFiltersOut(
-            city=city, department_id=department_id
+            city=city,
+            department_id=department_id,
+            date_from=date_from,
+            date_to=date_to,
         ),
         live=schemas.AdminLiveOverviewOut(
             total=total_live,
@@ -559,6 +627,8 @@ def build_overview(
             needs_ai_review=needs_ai_review,
             department_workload=department_workload,
             city_distribution=city_distribution,
+            category_distribution=live_category_distribution,
+            priority_distribution=live_priority_distribution,
         ),
         historical=schemas.AdminHistoricalOverviewOut(
             total=total_historical,

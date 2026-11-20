@@ -8,6 +8,7 @@ All storage happens in a temporary directory; the database is isolated in
 memory. No real project database or upload directory is touched.
 """
 import re
+import os
 import shutil
 import sys
 import tempfile
@@ -471,6 +472,171 @@ class TestSecureUploadEndpoints(unittest.TestCase):
         self.assertEqual(self._stored_files(), [])
         self.assertEqual(self.db.query(models.IssueImage).count(), 0)
 
+
+class TestDatabaseBackedImageStorage(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        Base.metadata.create_all(bind=engine)
+        cls.client = TestClient(app)
+        cls.password_hash = hash_password(TEST_PASSWORD)
+        cls.settings = get_settings()
+
+    def setUp(self):
+        self.db = TestingSessionLocal()
+        self.old_overrides = app.dependency_overrides.copy()
+        app.dependency_overrides[get_db] = override_get_db
+        self.old_backend = os.environ.get("EVIDENCE_STORAGE_BACKEND")
+        os.environ["EVIDENCE_STORAGE_BACKEND"] = "database"
+
+        self.db.query(models.IssueStatusUpdate).delete()
+        self.db.query(models.IssueImage).delete()
+        self.db.query(models.Issue).delete()
+        self.db.query(models.User).delete()
+        self.db.query(models.Department).delete()
+        self.db.commit()
+
+        self.dept = models.Department(
+            name="DB_IMAGE_ROADS",
+            handles_category=models.IssueCategory.ROAD_DAMAGE,
+            city="Gurugram, Haryana, India",
+        )
+        self.db.add(self.dept)
+        self.db.commit()
+
+        self.citizen = models.User(
+            name="DB Image Citizen",
+            email="db.image.citizen@example.com",
+            password_hash=self.password_hash,
+            role=models.UserRole.CITIZEN,
+        )
+        self.other = models.User(
+            name="DB Image Other",
+            email="db.image.other@example.com",
+            password_hash=self.password_hash,
+            role=models.UserRole.CITIZEN,
+        )
+        self.admin = models.User(
+            name="DB Image Admin",
+            email="db.image.admin@example.com",
+            password_hash=self.password_hash,
+            role=models.UserRole.ADMIN,
+        )
+        self.db.add_all([self.citizen, self.other, self.admin])
+        self.db.commit()
+
+        self.token = create_access_token(self.citizen)
+        self.other_token = create_access_token(self.other)
+        self.admin_token = create_access_token(self.admin)
+
+        self.issue = models.Issue(
+            ticket_number="DB-IMAGE-001",
+            title="Database image fixture",
+            description="Fixture for database-backed image tests.",
+            category=models.IssueCategory.ROAD_DAMAGE,
+            category_confidence=0.0,
+            category_source="india_keyword_rule",
+            priority_score=1.0,
+            priority_level=models.PriorityLevel.LOW,
+            status=models.IssueStatus.REPORTED,
+            latitude=28.4595,
+            longitude=77.0266,
+            city="Gurugram, Haryana, India",
+            reporter_id=self.citizen.id,
+            department_id=self.dept.id,
+            is_historical=False,
+        )
+        self.db.add(self.issue)
+        self.db.commit()
+        self.db.refresh(self.issue)
+
+    def tearDown(self):
+        self.db.close()
+        app.dependency_overrides = self.old_overrides
+        if self.old_backend is None:
+            os.environ.pop("EVIDENCE_STORAGE_BACKEND", None)
+        else:
+            os.environ["EVIDENCE_STORAGE_BACKEND"] = self.old_backend
+
+    def _upload(self, data, filename="evidence.jpg", content_type="image/jpeg"):
+        return self.client.post(
+            f"/api/v1/issues/{self.issue.id}/images",
+            files={"file": (filename, data, content_type)},
+            headers=bearer(self.token),
+        )
+
+    def test_database_upload_stores_bytes_and_key(self):
+        data = make_image_bytes(".jpg")
+        response = self._upload(data)
+        self.assertEqual(response.status_code, 201)
+        payload = response.json()
+        self.assertRegex(payload["image_url"], r"^db:[0-9a-f-]{36}\.jpg$")
+        image = self.db.query(models.IssueImage).filter_by(id=payload["id"]).first()
+        self.assertIsNotNone(image.image_data)
+        self.assertGreater(len(image.image_data), 0)
+
+    def test_database_upload_content_round_trip(self):
+        data = make_image_bytes(".png")
+        upload = self._upload(data, filename="photo.jpg", content_type="image/jpeg")
+        self.assertEqual(upload.status_code, 201)
+        image_id = upload.json()["id"]
+        response = self.client.get(
+            f"/api/v1/issues/{self.issue.id}/images/{image_id}/content",
+            headers=bearer(self.token),
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("image/png", response.headers.get("content-type", ""))
+        self.assertGreater(len(response.content), 0)
+
+    def test_database_upload_rejects_invalid_and_oversized(self):
+        invalid = self._upload(b"\xff\xd8\xff" + b"broken" * 20)
+        self.assertEqual(invalid.status_code, 400)
+        self.assertEqual(self.db.query(models.IssueImage).count(), 0)
+
+        oversized = make_image_bytes(".jpg")
+        # Force a tiny limit without changing the global default permanently.
+        self.settings.MAX_UPLOAD_SIZE_MB = 0
+        try:
+            response = self._upload(oversized)
+        finally:
+            self.settings.MAX_UPLOAD_SIZE_MB = 10
+        self.assertEqual(response.status_code, 413)
+        self.assertEqual(self.db.query(models.IssueImage).count(), 0)
+
+    def test_database_content_requires_authorisation(self):
+        upload = self._upload(make_image_bytes(".jpg"))
+        self.assertEqual(upload.status_code, 201)
+        image_id = upload.json()["id"]
+
+        anonymous = self.client.get(
+            f"/api/v1/issues/{self.issue.id}/images/{image_id}/content"
+        )
+        self.assertEqual(anonymous.status_code, 401)
+
+        other = self.client.get(
+            f"/api/v1/issues/{self.issue.id}/images/{image_id}/content",
+            headers=bearer(self.other_token),
+        )
+        self.assertEqual(other.status_code, 404)
+
+        admin = self.client.get(
+            f"/api/v1/issues/{self.issue.id}/images/{image_id}/content",
+            headers=bearer(self.admin_token),
+        )
+        self.assertEqual(admin.status_code, 200)
+
+    def test_database_image_survives_new_session(self):
+        upload = self._upload(make_image_bytes(".jpg"))
+        self.assertEqual(upload.status_code, 201)
+        image_id = upload.json()["id"]
+
+        fresh_db = TestingSessionLocal()
+        try:
+            image = fresh_db.query(models.IssueImage).filter_by(id=image_id).first()
+            self.assertIsNotNone(image)
+            self.assertIsNotNone(image.image_data)
+            self.assertGreater(len(image.image_data), 0)
+        finally:
+            fresh_db.close()
 
 if __name__ == "__main__":
     unittest.main()

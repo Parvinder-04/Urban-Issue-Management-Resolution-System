@@ -168,6 +168,12 @@ textarea{min-height:110px;resize:vertical}
 .nav-btn.active{background:rgba(20,184,166,.16);color:#fff;box-shadow:inset 3px 0 0 #2dd4bf}
 .nav-btn:focus-visible{outline:2px solid #5eead4;outline-offset:2px}
 .nav-icon{width:22px;text-align:center;font-size:15px;opacity:.95}
+.side-home-link{
+  display:flex;align-items:center;gap:8px;margin:8px 8px 10px;padding:9px 10px;
+  border-radius:9px;color:#cfe6f2;font-size:12px;font-weight:600;text-decoration:none;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+}
+.side-home-link:hover{background:rgba(45,212,191,.14);color:#fff;text-decoration:none}
 .sidebar-spacer{flex:1}
 .side-user{border-top:1px solid rgba(255,255,255,.1);padding-top:16px;display:grid;gap:10px}
 .side-user .who{display:flex;align-items:center;gap:10px;min-width:0}
@@ -420,6 +426,7 @@ textarea{min-height:110px;resize:vertical}
       <button type="button" class="nav-btn" data-view="queue" data-scope="all"><span class="nav-icon" aria-hidden="true">▤</span>All live complaints</button>
       <button type="button" class="nav-btn" data-view="profile"><span class="nav-icon" aria-hidden="true">◉</span>Profile</button>
     </nav>
+    <a class="side-home-link" href="/"><span aria-hidden="true">&#8592;</span> UIMRS Home</a>
     <div class="sidebar-spacer"></div>
     <div class="side-user">
       <div class="who">

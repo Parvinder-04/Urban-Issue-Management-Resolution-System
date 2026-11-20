@@ -119,6 +119,9 @@ REQUIRED_SCHEMA: Mapping[str, tuple[str, ...]] = {
     "issues": (
         BASELINE_SCHEMA["issues"] + EXPLAINABILITY_COLUMNS + ISSUE_ROUTING_COLUMNS
     ),
+    "issue_images": (
+        BASELINE_SCHEMA["issue_images"] + ("image_data",)
+    ),
     AUDIT_LOG_TABLE: AUDIT_LOG_COLUMNS,
 }
 

@@ -1,0 +1,1129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Analytics — UIMRS</title>
+<meta name="description" content="UIMRS analytics: public historical Bengaluru aggregates, and role-gated live complaint analytics for municipal officers and administrators.">
+<meta name="theme-color" content="#0a1f33">
+<link rel="stylesheet" href="/assets/uimrs.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230a1f33'/%3E%3Cpath d='M18 22h28M18 32h28M18 42h18' stroke='%232dd4bf' stroke-width='6' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+  .ana-hero {
+    background:
+      radial-gradient(900px 420px at 5% -20%, #164b70 0%, transparent 62%),
+      radial-gradient(700px 380px at 100% 0%, rgba(13,148,136,.25) 0%, transparent 58%),
+      linear-gradient(160deg, #0a1f33, #0c2740 70%, #081a2b);
+    color: #eef6fb;
+    padding: 46px 0 40px;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+  }
+  .ana-hero h1 { color: #fff; margin: 0 0 10px; font-size: clamp(28px, 4vw, 42px); letter-spacing: -.03em; }
+  .ana-hero p { color: #b9d2e2; margin: 0; max-width: 760px; font-size: 15px; }
+  .ana-hero .uimrs-eyebrow { color: #6ee7db; }
+  .ana-hero .uimrs-eyebrow::before { background: #2dd4bf; }
+  .ana-hero-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+  .ana-hero-tags span {
+    font-size: 10.5px; font-weight: 750; letter-spacing: .06em; text-transform: uppercase;
+    background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.16);
+    color: #cfe6f2; padding: 5px 9px; border-radius: 999px;
+  }
+
+  .ana-panel {
+    background: #fff; border: 1px solid var(--line); border-radius: var(--radius);
+    box-shadow: var(--shadow-sm); padding: 22px; margin-bottom: 22px;
+  }
+  .ana-panel-head {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap; padding-bottom: 16px;
+    border-bottom: 1px solid var(--line); margin-bottom: 18px;
+  }
+  .ana-panel-head h2 { margin: 0 0 4px; font-size: 20px; letter-spacing: -.01em; }
+  .ana-panel-head p { margin: 0; font-size: 12.5px; color: var(--muted); max-width: 640px; }
+  .ana-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 9.5px; font-weight: 850; letter-spacing: .09em; text-transform: uppercase;
+    padding: 5px 9px; border-radius: 999px; white-space: nowrap;
+  }
+  .ana-badge.public { background: #e2e8f0; color: #334155; }
+  .ana-badge.live { background: #dbeafe; color: #1e40af; }
+  .ana-badge.locked { background: var(--amber-soft); color: #92400e; }
+  .ana-badge.role { background: var(--teal-wash); color: var(--teal); }
+
+  .ana-filters {
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px; align-items: end; margin-bottom: 18px;
+    background: #f8fbfd; border: 1px solid var(--line);
+    border-radius: 12px; padding: 14px;
+  }
+  .ana-field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+  .ana-field label { font-size: 10.5px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+  .ana-field input, .ana-field select {
+    font: inherit; font-size: 13px; color: var(--ink); background: #fff;
+    border: 1px solid #c8d7e4; border-radius: 9px; padding: 9px 10px; width: 100%;
+  }
+  .ana-field input:focus, .ana-field select:focus { border-color: var(--teal-strong); outline: none; box-shadow: 0 0 0 3px rgba(13,148,136,.18); }
+  .ana-filter-actions { display: flex; gap: 8px; align-items: center; }
+  .ana-filter-actions .uimrs-btn { padding: 9px 14px; font-size: 12.5px; }
+
+  .ana-state { font-size: 12.5px; border-radius: 10px; padding: 12px 14px; margin: 6px 0 14px; }
+  .ana-state.loading { background: var(--teal-wash); color: #0f5f59; border: 1px solid #c6efe9; }
+  .ana-state.error { background: var(--danger-soft); color: var(--danger); border: 1px solid #f9c9c5; }
+  .ana-state.empty { background: #f1f5f9; color: #475569; border: 1px solid var(--line); }
+  .ana-state.ok { background: var(--ok-soft); color: var(--ok); border: 1px solid #b7ebc9; }
+
+  .ana-stats { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; margin-bottom: 20px; }
+  .ana-stat { border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; background: #fbfdff; }
+  .ana-stat .l { font-size: 10.5px; font-weight: 750; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .ana-stat .v { font-size: 24px; font-weight: 850; letter-spacing: -.02em; color: var(--navy); margin-top: 3px; line-height: 1.15; }
+  .ana-stat .v.small { font-size: 15px; line-height: 1.35; margin-top: 6px; }
+  .ana-stat .s { font-size: 10.5px; color: var(--muted); margin-top: 2px; }
+
+  .ana-chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .ana-chart { border: 1px solid var(--line); border-radius: 12px; padding: 16px; background: #fff; min-width: 0; }
+  .ana-chart.wide { grid-column: 1 / -1; }
+  .ana-chart h3 { margin: 0 0 4px; font-size: 13.5px; }
+  .ana-chart .cap { font-size: 11px; color: var(--muted); margin: 0 0 12px; }
+  .bar-row { display: grid; grid-template-columns: minmax(96px, 150px) 1fr 62px; gap: 10px; align-items: center; margin: 7px 0; font-size: 12px; }
+  .bar-label { color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar-track { background: #eef3f8; border-radius: 999px; height: 10px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #0f766e, #2dd4bf); min-width: 2px; transition: width .35s ease; }
+  .bar-value { text-align: right; font-weight: 750; font-variant-numeric: tabular-nums; color: var(--ink-2); }
+  .status-stack { display: flex; height: 16px; border-radius: 999px; overflow: hidden; background: #eef3f8; margin-top: 6px; }
+  .status-stack div { height: 100%; min-width: 2px; }
+  .status-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 14px; font-size: 11.5px; color: var(--ink-2); }
+  .status-legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .status-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  .ana-map { border: 1px solid var(--line); border-radius: 12px; background: #f8fbfd; padding: 6px; }
+  .ana-map svg { display: block; width: 100%; height: auto; }
+  .ana-map-cap { font-size: 10.5px; color: var(--muted); margin-top: 8px; }
+
+  .ana-table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
+  table.ana-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 640px; }
+  table.ana-table th { text-align: left; font-size: 10px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); background: #f8fbfd; padding: 10px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  table.ana-table td { padding: 10px 12px; border-bottom: 1px solid #eef3f8; color: var(--ink-2); }
+  table.ana-table tr:last-child td { border-bottom: 0; }
+  table.ana-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+  .ana-login { max-width: 520px; }
+  .ana-login .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .ana-session {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    background: var(--teal-wash); border: 1px solid #c6efe9; border-radius: 12px; padding: 12px 14px; margin-bottom: 16px;
+  }
+  .ana-session b { font-size: 13px; color: #0f5f59; }
+  .ana-session small { display: block; font-size: 11px; color: #337f78; }
+  .ana-method { font-size: 11.5px; color: var(--muted); margin: -4px 0 16px; }
+  @media (max-width: 980px) {
+    .ana-filters { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .ana-chart-grid { grid-template-columns: 1fr; }
+    .ana-stats { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  }
+  @media (max-width: 560px) {
+    .ana-filters, .ana-stats { grid-template-columns: 1fr; }
+    .ana-login .row { grid-template-columns: 1fr; }
+    .bar-row { grid-template-columns: 96px 1fr 52px; }
+  }
+</style>
+</head>
+<body class="uimrs" data-nav-current="analytics">
+
+<a class="uimrs-skip" href="#main">Skip to main content</a>
+
+<header class="uimrs-nav">
+  <div class="uimrs-nav-inner">
+    <a class="uimrs-brand" href="/" aria-label="UIMRS home">
+      <span class="uimrs-brand-mark" aria-hidden="true">U</span>
+      <span>UIMRS<small>Urban Issue Management</small></span>
+    </a>
+    <button class="uimrs-nav-toggle" type="button" data-uimrs-nav-toggle aria-expanded="false" aria-controls="uimrs-nav-links" aria-label="Toggle navigation menu">&#9776;</button>
+    <nav class="uimrs-nav-links" id="uimrs-nav-links" data-uimrs-nav-links aria-label="Primary">
+      <a href="/" data-nav="home">Home</a>
+      <a href="/dashboard" data-nav="dashboard">Dashboard</a>
+      <a href="/citizen" data-nav="citizen">Citizen Portal</a>
+      <a href="/officer" data-nav="officer">Officer Portal</a>
+      <a href="/admin" data-nav="admin">Admin Portal</a>
+      <a href="/analytics" data-nav="analytics">Analytics</a>
+      <a href="/gallery" data-nav="gallery">3D Gallery</a>
+      <a href="/#future">Future Development</a>
+      <a class="uimrs-nav-cta" href="/citizen">Report an issue</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+<div class="ana-hero">
+  <div class="uimrs-wrap">
+    <p class="uimrs-eyebrow">Analytics</p>
+    <h1>Evidence, separated by source</h1>
+    <p>
+      Historical Bengaluru records and live UIMRS complaints are presented in
+      separate panels with explicit source labels. They are never summed into a
+      single figure.
+    </p>
+    <div class="ana-hero-tags">
+      <span>Public historical aggregates</span>
+      <span>Live analytics require officer or admin sign-in</span>
+      <span>Priority is an explainable heuristic</span>
+    </div>
+  </div>
+</div>
+
+<div class="uimrs-section tight">
+  <div class="uimrs-wrap">
+
+    <!-- ================= HISTORICAL ================= -->
+    <section class="ana-panel" aria-labelledby="hist-title">
+      <div class="ana-panel-head">
+        <div>
+          <span class="ana-badge public">Public &middot; Historical data</span>
+          <h2 id="hist-title">Bengaluru historical records</h2>
+          <p>
+            Imported I Change My City / Janaagraha records for Bengaluru. These
+            rows are read-only, are not Gurugram model performance, and are not
+            counted with live UIMRS complaints.
+          </p>
+        </div>
+        <span class="ana-badge">Source: /api/v1/analytics</span>
+      </div>
+
+      <form class="ana-filters" id="hist-filters">
+        <div class="ana-field">
+          <label for="hist-from">Created from</label>
+          <input type="date" id="hist-from" name="date_from">
+        </div>
+        <div class="ana-field">
+          <label for="hist-to">Created to</label>
+          <input type="date" id="hist-to" name="date_to">
+        </div>
+        <div class="ana-field">
+          <label for="hist-city">City scope</label>
+          <input type="text" id="hist-city" value="Bengaluru, Karnataka, India" readonly aria-readonly="true">
+        </div>
+        <div class="ana-filter-actions">
+          <button class="uimrs-btn primary" type="submit">Apply</button>
+          <button class="uimrs-btn ghost" type="button" id="hist-reset">Reset</button>
+        </div>
+      </form>
+      <p class="ana-method">
+        The date window filters the historical source records by complaint
+        creation date. City scope is fixed because the imported dataset covers
+        Bengaluru only.
+      </p>
+
+      <div class="ana-state loading" id="hist-status" role="status" aria-live="polite">Loading historical aggregates…</div>
+
+      <div id="hist-content" hidden>
+        <div class="ana-stats">
+          <div class="ana-stat">
+            <div class="l">Historical records</div>
+            <div class="v" id="hist-total">—</div>
+            <div class="s">Rows in the selected window</div>
+          </div>
+          <div class="ana-stat">
+            <div class="l">Still open</div>
+            <div class="v" id="hist-open">—</div>
+            <div class="s">Reported or in progress</div>
+          </div>
+          <div class="ana-stat">
+            <div class="l">Resolved</div>
+            <div class="v" id="hist-resolved">—</div>
+            <div class="s">Status recorded as resolved</div>
+          </div>
+          <div class="ana-stat">
+            <div class="l">Mean resolution time</div>
+            <div class="v small" id="hist-avg">—</div>
+            <div class="s">Only where real timestamps exist</div>
+          </div>
+        </div>
+
+        <div class="ana-chart-grid">
+          <div class="ana-chart">
+            <h3>Category distribution</h3>
+            <p class="cap">Historical complaints grouped by recorded category.</p>
+            <div id="hist-categories"></div>
+          </div>
+          <div class="ana-chart">
+            <h3>Status distribution</h3>
+            <p class="cap">Aggregated from the recorded agency and unassigned rows.</p>
+            <div id="hist-status-chart"></div>
+            <div class="status-legend" id="hist-status-legend"></div>
+          </div>
+          <div class="ana-chart wide">
+            <h3>Geographic distribution</h3>
+            <p class="cap">Recorded hotspot centres of open historical complaints. Individual complaint coordinates are not published.</p>
+            <div class="ana-map" id="hist-map"></div>
+            <div class="ana-map-cap" id="hist-map-cap"></div>
+          </div>
+          <div class="ana-chart wide">
+            <h3>Source agency records</h3>
+            <p class="cap">Agency assignments exactly as recorded in the historical dataset.</p>
+            <div class="ana-table-wrap">
+              <table class="ana-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Agency</th>
+                    <th scope="col">Source agency</th>
+                    <th scope="col">City</th>
+                    <th scope="col">Records</th>
+                    <th scope="col">Reported</th>
+                    <th scope="col">In progress</th>
+                    <th scope="col">Resolved</th>
+                    <th scope="col">Rejected</th>
+                  </tr>
+                </thead>
+                <tbody id="hist-agencies"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="uimrs-note grey uimrs-mt-2">
+          <span aria-hidden="true">&#9432;</span>
+          <span>
+            <b>Priority distribution is not shown for historical data.</b>
+            The imported source does not record a priority level, so no priority
+            chart is invented for these rows.
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= LIVE ================= -->
+    <section class="ana-panel" aria-labelledby="live-title">
+      <div class="ana-panel-head">
+        <div>
+          <span class="ana-badge live">Restricted &middot; Live data</span>
+          <h2 id="live-title">Live UIMRS complaint analytics</h2>
+          <p>
+            Live complaints filed through this application. Municipality-wide
+            figures require an administrator account; officers see their own
+            department scope. Citizens cannot access this panel.
+          </p>
+        </div>
+        <span class="ana-badge locked" id="live-lock-badge">Sign-in required</span>
+      </div>
+
+      <div id="live-login-wrap">
+        <form class="ana-login" id="live-login">
+          <div class="row">
+            <div class="ana-field">
+              <label for="live-email">Email</label>
+              <input type="email" id="live-email" name="email" autocomplete="username" required>
+            </div>
+            <div class="ana-field">
+              <label for="live-password">Password</label>
+              <input type="password" id="live-password" name="password" autocomplete="current-password" required>
+            </div>
+          </div>
+          <div class="uimrs-row uimrs-mt-1">
+            <button class="uimrs-btn primary" type="submit">Sign in for live analytics</button>
+            <a class="uimrs-btn link" href="/officer">Officer portal</a>
+            <a class="uimrs-btn link" href="/admin">Admin portal</a>
+          </div>
+        </form>
+        <div class="ana-state empty" id="live-login-status" role="status" aria-live="polite">
+          Your sign-in token is held in this tab's sessionStorage only. It is removed when you sign out.
+        </div>
+      </div>
+
+      <div id="live-content" hidden>
+        <div class="ana-session">
+          <div>
+            <b id="live-user-name">Signed in</b>
+            <small id="live-user-role">Role</small>
+          </div>
+          <button class="uimrs-btn ghost" type="button" id="live-signout">Sign out</button>
+        </div>
+
+        <form class="ana-filters" id="live-filters">
+          <div class="ana-field" id="live-city-field">
+            <label for="live-city">City</label>
+            <select id="live-city">
+              <option value="">All live cities</option>
+            </select>
+          </div>
+          <div class="ana-field">
+            <label for="live-from">Created from</label>
+            <input type="date" id="live-from" name="date_from">
+          </div>
+          <div class="ana-field">
+            <label for="live-to">Created to</label>
+            <input type="date" id="live-to" name="date_to">
+          </div>
+          <div class="ana-filter-actions">
+            <button class="uimrs-btn primary" type="submit">Apply</button>
+            <button class="uimrs-btn ghost" type="button" id="live-reset">Reset</button>
+          </div>
+        </form>
+        <p class="ana-method" id="live-scope-note">
+          City and date filters apply to the live section only. They never
+          change the historical panel above.
+        </p>
+
+        <div class="ana-state loading" id="live-status" role="status" aria-live="polite" hidden></div>
+
+        <div id="live-summary" hidden>
+          <div class="ana-stats">
+            <div class="ana-stat">
+              <div class="l" id="live-stat-total-label">Live complaints</div>
+              <div class="v" id="live-total">—</div>
+              <div class="s" id="live-total-note">In the selected scope</div>
+            </div>
+            <div class="ana-stat">
+              <div class="l" id="live-stat-2-label">Assigned</div>
+              <div class="v" id="live-assigned">—</div>
+              <div class="s">Routed to a verified department</div>
+            </div>
+            <div class="ana-stat">
+              <div class="l" id="live-stat-3-label">Unassigned</div>
+              <div class="v" id="live-unassigned">—</div>
+              <div class="s">Awaiting routing decision</div>
+            </div>
+            <div class="ana-stat">
+              <div class="l" id="live-stat-4-label">Awaiting review</div>
+              <div class="v" id="live-review">—</div>
+              <div class="s">Manual jurisdiction review</div>
+            </div>
+          </div>
+
+          <div class="ana-chart-grid">
+            <div class="ana-chart">
+              <h3>Status distribution</h3>
+              <p class="cap">Current live status counts.</p>
+              <div id="live-status-chart"></div>
+              <div class="status-legend" id="live-status-legend"></div>
+            </div>
+            <div class="ana-chart">
+              <h3>Priority distribution</h3>
+              <p class="cap">Explainable heuristic priority levels.</p>
+              <div id="live-priorities"></div>
+            </div>
+            <div class="ana-chart">
+              <h3>Category distribution</h3>
+              <p class="cap">Live complaints grouped by category.</p>
+              <div id="live-categories"></div>
+            </div>
+            <div class="ana-chart">
+              <h3 id="live-dept-title">Department workload</h3>
+              <p class="cap" id="live-dept-cap">Live complaints routed to each department.</p>
+              <div id="live-departments"></div>
+            </div>
+            <div class="ana-chart wide" id="live-city-chart-wrap">
+              <h3>Geographic distribution</h3>
+              <p class="cap">Live complaint counts by recorded city.</p>
+              <div id="live-cities"></div>
+            </div>
+          </div>
+
+          <div class="uimrs-note uimrs-mt-2" id="live-note">
+            <span aria-hidden="true">&#9432;</span>
+            <span>Live and historical figures are kept separate. Nothing on this page adds them together.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+</main>
+
+<footer class="uimrs-footer">
+  <div class="uimrs-wrap">
+    <div class="uimrs-footer-bottom" style="border-top:0;margin-top:0;padding-top:0">
+      <span>&copy; 2026 UIMRS. Academic project — not an official municipal service.</span>
+      <span><a href="/" style="display:inline;color:#b7cfdf">Home</a> &middot; <a href="/dashboard" style="display:inline;color:#b7cfdf">Dashboard</a> &middot; <a href="/gallery" style="display:inline;color:#b7cfdf">3D Gallery</a></span>
+    </div>
+  </div>
+</footer>
+
+<script src="/assets/uimrs-nav.js" defer></script>
+<script>
+(function () {
+  "use strict";
+
+  var API_PREFIX = "/api/v1";
+  var TOKEN_KEY = "uimrs_analytics_token";
+
+  var CATEGORY_LABELS = {
+    Road_Damage: "Road damage",
+    Garbage_Waste: "Garbage / waste",
+    Streetlight: "Streetlight",
+    Water_Supply: "Water supply",
+    Drainage_Sewage: "Drainage / sewage",
+    Traffic_Signal: "Traffic signal",
+    Traffic_Management: "Traffic management",
+    Trees_Environment: "Trees / environment",
+    Illegal_Construction: "Illegal construction",
+    Public_Property_Damage: "Public property damage",
+    Other: "Other"
+  };
+
+  var STATUS_META = {
+    reported: { label: "Reported", color: "#d97706" },
+    acknowledged: { label: "Acknowledged", color: "#2563eb" },
+    in_progress: { label: "In progress", color: "#0d9488" },
+    resolved: { label: "Resolved", color: "#067647" },
+    rejected: { label: "Rejected", color: "#b42318" },
+    duplicate: { label: "Duplicate", color: "#64748b" }
+  };
+
+  var state = { token: null, user: null };
+
+  function byId(id) { return document.getElementById(id); }
+
+  function clearNode(node) {
+    while (node && node.firstChild) { node.removeChild(node.firstChild); }
+  }
+
+  function num(value) {
+    var n = Number(value || 0);
+    return isFinite(n) ? n.toLocaleString("en-IN") : "0";
+  }
+
+  function categoryLabel(value) {
+    if (!value) { return "Unspecified"; }
+    return CATEGORY_LABELS[value] || String(value).replace(/_/g, " ");
+  }
+
+  function setState(node, kind, message) {
+    if (!node) { return; }
+    node.hidden = false;
+    node.className = "ana-state " + kind;
+    node.textContent = message;
+  }
+
+  function hideState(node) {
+    if (!node) { return; }
+    node.hidden = true;
+    node.textContent = "";
+  }
+
+  function errorMessage(payload, fallback) {
+    if (!payload) { return fallback; }
+    var detail = payload.detail;
+    if (typeof detail === "string" && detail) { return detail; }
+    if (Array.isArray(detail) && detail.length) {
+      return detail.map(function (item) {
+        return item && item.msg ? item.msg : String(item);
+      }).join(" ");
+    }
+    return fallback;
+  }
+
+  function readJson(response) {
+    return response.text().then(function (text) {
+      if (!text) { return null; }
+      try { return JSON.parse(text); } catch (error) { return null; }
+    });
+  }
+
+  function api(path, options) {
+    options = options || {};
+    var headers = {};
+    if (options.token) { headers.Authorization = "Bearer " + options.token; }
+    return fetch(API_PREFIX + path, { headers: headers, cache: "no-store" }).then(function (response) {
+      return readJson(response).then(function (payload) {
+        if (!response.ok) {
+          if (response.status === 401 && options.token) {
+            signOut("Your session expired. Sign in again.");
+          }
+          var error = new Error(errorMessage(payload, "Request failed (" + response.status + ")."));
+          error.status = response.status;
+          throw error;
+        }
+        return payload;
+      });
+    });
+  }
+
+  function renderBars(container, rows, emptyMessage) {
+    clearNode(container);
+    if (!rows || !rows.length) {
+      var empty = document.createElement("div");
+      empty.className = "ana-state empty";
+      empty.textContent = emptyMessage || "No records in this view.";
+      container.appendChild(empty);
+      return;
+    }
+    var max = 1;
+    rows.forEach(function (row) { max = Math.max(max, Number(row.value) || 0); });
+    rows.forEach(function (row) {
+      var line = document.createElement("div");
+      line.className = "bar-row";
+
+      var label = document.createElement("span");
+      label.className = "bar-label";
+      label.textContent = row.label;
+      label.title = row.label;
+
+      var track = document.createElement("div");
+      track.className = "bar-track";
+      var fill = document.createElement("div");
+      fill.className = "bar-fill";
+      if (row.color) { fill.style.background = row.color; }
+      fill.style.width = Math.max(2, Math.round((Number(row.value) || 0) / max * 100)) + "%";
+      track.appendChild(fill);
+
+      var value = document.createElement("span");
+      value.className = "bar-value";
+      value.textContent = num(row.value);
+
+      line.appendChild(label);
+      line.appendChild(track);
+      line.appendChild(value);
+      container.appendChild(line);
+    });
+  }
+
+  function statusEntries(counts) {
+    var entries = [];
+    Object.keys(STATUS_META).forEach(function (key) {
+      entries.push({
+        key: key,
+        label: STATUS_META[key].label,
+        color: STATUS_META[key].color,
+        count: Number(counts && counts[key] || 0)
+      });
+    });
+    return entries;
+  }
+
+  function renderStatus(container, legend, entries) {
+    clearNode(container);
+    clearNode(legend);
+    var total = entries.reduce(function (sum, item) { return sum + item.count; }, 0);
+    if (!total) {
+      var empty = document.createElement("div");
+      empty.className = "ana-state empty";
+      empty.textContent = "No status records in this view.";
+      container.appendChild(empty);
+      return;
+    }
+    var stack = document.createElement("div");
+    stack.className = "status-stack";
+    entries.forEach(function (item) {
+      if (!item.count) { return; }
+      var part = document.createElement("div");
+      part.style.background = item.color;
+      part.style.width = (item.count / total * 100) + "%";
+      part.title = item.label + ": " + item.count;
+      stack.appendChild(part);
+    });
+    container.appendChild(stack);
+    entries.forEach(function (item) {
+      var span = document.createElement("span");
+      var dot = document.createElement("i");
+      dot.className = "status-dot";
+      dot.style.background = item.color;
+      span.appendChild(dot);
+      span.appendChild(document.createTextNode(item.label + " — " + num(item.count)));
+      legend.appendChild(span);
+    });
+  }
+
+  function renderHotspotMap(host, hotspots) {
+    clearNode(host);
+    var caption = byId("hist-map-cap");
+    if (!hotspots || !hotspots.length) {
+      var empty = document.createElement("div");
+      empty.className = "ana-state empty";
+      empty.textContent = "No open historical hotspots were recorded in this window.";
+      host.appendChild(empty);
+      if (caption) { caption.textContent = ""; }
+      return;
+    }
+
+    var W = 680, H = 380, pad = 34;
+    var lats = hotspots.map(function (h) { return h.center_lat; });
+    var lons = hotspots.map(function (h) { return h.center_lon; });
+    var minLat = Math.min.apply(null, lats), maxLat = Math.max.apply(null, lats);
+    var minLon = Math.min.apply(null, lons), maxLon = Math.max.apply(null, lons);
+    if (maxLat - minLat < 0.02) { minLat -= 0.01; maxLat += 0.01; }
+    if (maxLon - minLon < 0.02) { minLon -= 0.01; maxLon += 0.01; }
+    minLat -= 0.01; maxLat += 0.01; minLon -= 0.01; maxLon += 0.01;
+
+    var NS = "http://www.w3.org/2000/svg";
+    var svg = document.createElementNS(NS, "svg");
+    svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+    svg.setAttribute("role", "img");
+    svg.setAttribute("aria-label", "Scatter plot of historical open-issue hotspot centres");
+
+    var background = document.createElementNS(NS, "rect");
+    background.setAttribute("width", W);
+    background.setAttribute("height", H);
+    background.setAttribute("fill", "#f8fbfd");
+    svg.appendChild(background);
+
+    var grid;
+    for (grid = 1; grid < 6; grid += 1) {
+      var gx = document.createElementNS(NS, "line");
+      gx.setAttribute("x1", pad + (W - 2 * pad) * grid / 6);
+      gx.setAttribute("x2", pad + (W - 2 * pad) * grid / 6);
+      gx.setAttribute("y1", pad);
+      gx.setAttribute("y2", H - pad);
+      gx.setAttribute("stroke", "#e3ecf4");
+      gx.setAttribute("stroke-width", "1");
+      svg.appendChild(gx);
+
+      var gy = document.createElementNS(NS, "line");
+      gy.setAttribute("x1", pad);
+      gy.setAttribute("x2", W - pad);
+      gy.setAttribute("y1", pad + (H - 2 * pad) * grid / 6);
+      gy.setAttribute("y2", pad + (H - 2 * pad) * grid / 6);
+      gy.setAttribute("stroke", "#e3ecf4");
+      gy.setAttribute("stroke-width", "1");
+      svg.appendChild(gy);
+    }
+
+    var maxCount = Math.max.apply(null, hotspots.map(function (h) { return Number(h.issue_count) || 1; }));
+
+    hotspots.forEach(function (hotspot) {
+      var x = pad + ((hotspot.center_lon - minLon) / (maxLon - minLon)) * (W - 2 * pad);
+      var y = H - pad - ((hotspot.center_lat - minLat) / (maxLat - minLat)) * (H - 2 * pad);
+      var radius = 5 + 13 * Math.sqrt((Number(hotspot.issue_count) || 1) / maxCount);
+
+      var circle = document.createElementNS(NS, "circle");
+      circle.setAttribute("cx", x);
+      circle.setAttribute("cy", y);
+      circle.setAttribute("r", radius);
+      circle.setAttribute("fill", "rgba(13, 148, 136, .28)");
+      circle.setAttribute("stroke", "#0f766e");
+      circle.setAttribute("stroke-width", "1.5");
+
+      var title = document.createElementNS(NS, "title");
+      title.textContent = "Hotspot #" + hotspot.cluster_id + ": " + hotspot.issue_count +
+        " open complaints (" + (hotspot.categories || []).map(categoryLabel).join(", ") + ")";
+      circle.appendChild(title);
+      svg.appendChild(circle);
+    });
+
+    host.appendChild(svg);
+
+    if (caption) {
+      caption.textContent = "Approximate extent: latitude " + minLat.toFixed(3) + "–" + maxLat.toFixed(3) +
+        ", longitude " + minLon.toFixed(3) + "–" + maxLon.toFixed(3) +
+        ". Marker size is proportional to the hotspot complaint count.";
+    }
+  }
+
+  function renderAgencyTable(rows) {
+    var body = byId("hist-agencies");
+    clearNode(body);
+    if (!rows || !rows.length) {
+      var tr = document.createElement("tr");
+      var td = document.createElement("td");
+      td.colSpan = 8;
+      td.textContent = "No agency-attributed historical records in this view.";
+      tr.appendChild(td);
+      body.appendChild(tr);
+      return;
+    }
+    rows.forEach(function (row) {
+      var tr = document.createElement("tr");
+      [
+        row.name,
+        row.source_agency,
+        row.city,
+        num(row.records),
+        num(row.reported),
+        num(row.in_progress),
+        num(row.resolved),
+        num(row.rejected)
+      ].forEach(function (value, index) {
+        var td = document.createElement("td");
+        td.textContent = value == null ? "—" : value;
+        if (index >= 3) { td.className = "num"; }
+        tr.appendChild(td);
+      });
+      body.appendChild(tr);
+    });
+  }
+
+  function readFilters(prefix) {
+    var params = new URLSearchParams();
+    var from = byId(prefix + "-from").value;
+    var to = byId(prefix + "-to").value;
+    if (from) { params.set("date_from", from); }
+    if (to) { params.set("date_to", to); }
+    return params;
+  }
+
+  function loadHistorical() {
+    var status = byId("hist-status");
+    var content = byId("hist-content");
+    content.hidden = true;
+    setState(status, "loading", "Loading historical aggregates…");
+
+    var params = readFilters("hist");
+    var suffix = params.toString() ? "?" + params.toString() : "";
+
+    Promise.all([
+      api("/analytics/dashboard" + suffix),
+      api("/analytics/departments" + suffix)
+    ]).then(function (results) {
+      var summary = results[0] || {};
+      var departments = results[1] || {};
+
+      byId("hist-total").textContent = num(summary.total_issues);
+      byId("hist-open").textContent = num(summary.open_issues);
+
+      var counts = { reported: 0, acknowledged: 0, in_progress: 0, resolved: 0, rejected: 0, duplicate: 0 };
+      var attributed = 0;
+      (departments.departments || []).forEach(function (row) {
+        counts.reported += Number(row.reported || 0);
+        counts.in_progress += Number(row.in_progress || 0);
+        counts.resolved += Number(row.resolved || 0);
+        counts.rejected += Number(row.rejected || 0);
+        attributed += Number(row.records || 0);
+      });
+      var unassigned = departments.unassigned_status_counts || {};
+      Object.keys(unassigned).forEach(function (key) {
+        if (Object.prototype.hasOwnProperty.call(counts, key)) {
+          counts[key] += Number(unassigned[key] || 0);
+        }
+      });
+      var known = counts.reported + counts.acknowledged + counts.in_progress +
+        counts.resolved + counts.rejected + counts.duplicate;
+      var total = Number(summary.total_issues || 0);
+      if (total > known) {
+        counts.duplicate += total - known;
+      }
+      byId("hist-resolved").textContent = num(counts.resolved);
+
+      if (summary.avg_resolution_hours === null || summary.avg_resolution_hours === undefined) {
+        byId("hist-avg").textContent = "Not available from source";
+      } else {
+        byId("hist-avg").textContent = Number(summary.avg_resolution_hours).toFixed(1) + " hours";
+      }
+
+      renderBars(
+        byId("hist-categories"),
+        (summary.category_breakdown || []).map(function (row) {
+          return { label: categoryLabel(row.category), value: row.count };
+        }).sort(function (a, b) { return b.value - a.value; }),
+        "No category records in this window."
+      );
+
+      renderStatus(byId("hist-status-chart"), byId("hist-status-legend"), statusEntries(counts));
+      renderHotspotMap(byId("hist-map"), summary.hotspots || []);
+      renderAgencyTable(departments.departments || []);
+
+      content.hidden = false;
+      var windowText = (params.get("date_from") || params.get("date_to"))
+        ? "Date-filtered historical view."
+        : "Complete historical dataset.";
+      setState(status, "ok", "Loaded. " + windowText + " " + num(total) + " records in scope.");
+    }).catch(function (error) {
+      content.hidden = true;
+      setState(status, "error", "Historical analytics could not be loaded. " + error.message);
+    });
+  }
+
+  function signOut(message) {
+    state.token = null;
+    state.user = null;
+    try { window.sessionStorage.removeItem(TOKEN_KEY); } catch (error) { /* ignore */ }
+    byId("live-content").hidden = true;
+    byId("live-login-wrap").hidden = false;
+    byId("live-login").reset();
+    byId("live-lock-badge").textContent = "Sign-in required";
+    byId("live-lock-badge").className = "ana-badge locked";
+    setState(byId("live-login-status"), "empty", message || "Signed out. Live analytics are hidden until you sign in again.");
+  }
+
+  function applySession(user) {
+    state.user = user;
+    byId("live-user-name").textContent = user.name || user.email || "Signed in";
+    var role = String(user.role || "").toLowerCase();
+    byId("live-user-role").textContent =
+      (role === "admin" ? "Administrator" : "Officer") +
+      (user.department_id ? " · department scope" : " · municipality scope");
+    byId("live-lock-badge").textContent = role === "admin" ? "Admin session" : "Officer session";
+    byId("live-lock-badge").className = "ana-badge role";
+    byId("live-login-wrap").hidden = true;
+    byId("live-content").hidden = false;
+
+    var cityField = byId("live-city-field");
+    if (role === "admin") {
+      cityField.hidden = false;
+      byId("live-scope-note").textContent =
+        "Administrator view: city and date filters apply to every live figure below. Historical data above is unaffected.";
+    } else {
+      cityField.hidden = true;
+      byId("live-scope-note").textContent =
+        "Officer view: figures cover your department only. The city filter is not applicable to your scope.";
+    }
+  }
+
+  function liveQuery() {
+    var params = new URLSearchParams();
+    var city = byId("live-city").value;
+    var from = byId("live-from").value;
+    var to = byId("live-to").value;
+    if (city) { params.set("city", city); }
+    if (from) { params.set("date_from", from); }
+    if (to) { params.set("date_to", to); }
+    return params;
+  }
+
+  function fillCityOptions(rows) {
+    var select = byId("live-city");
+    var current = select.value;
+    clearNode(select);
+    var all = document.createElement("option");
+    all.value = "";
+    all.textContent = "All live cities";
+    select.appendChild(all);
+    (rows || []).forEach(function (row) {
+      if (!row.city) { return; }
+      var option = document.createElement("option");
+      option.value = row.city;
+      option.textContent = row.city + " (" + num(row.count) + ")";
+      select.appendChild(option);
+    });
+    select.value = current;
+  }
+
+  function loadLive() {
+    if (!state.token) { return; }
+    var status = byId("live-status");
+    byId("live-summary").hidden = true;
+    setState(status, "loading", "Loading live complaint analytics…");
+
+    api("/auth/me", { token: state.token }).then(function (user) {
+      var role = String(user && user.role || "").toLowerCase();
+      if (role !== "admin" && role !== "officer") {
+        throw new Error("Live analytics are restricted to officer and administrator accounts.");
+      }
+      applySession(user);
+      if (role === "admin") {
+        return loadAdminOverview();
+      }
+      return loadOfficerSummary();
+    }).catch(function (error) {
+      if (error.status === 401) { return; }
+      setState(status, "error", "Live analytics could not be loaded. " + error.message);
+    });
+  }
+
+  function loadAdminOverview() {
+    var status = byId("live-status");
+    var params = liveQuery();
+    var suffix = params.toString() ? "?" + params.toString() : "";
+
+    return api("/admin/overview" + suffix, { token: state.token }).then(function (data) {
+      var live = data.live || {};
+      byId("live-total").textContent = num(live.total);
+      byId("live-assigned").textContent = num(live.assigned);
+      byId("live-unassigned").textContent = num(live.unassigned);
+      byId("live-review").textContent = num(live.awaiting_review);
+
+      var counts = live.statuses || {};
+      renderStatus(
+        byId("live-status-chart"),
+        byId("live-status-legend"),
+        statusEntries({
+          reported: counts.reported,
+          acknowledged: counts.acknowledged,
+          in_progress: counts.in_progress,
+          resolved: counts.resolved,
+          rejected: counts.rejected,
+          duplicate: counts.duplicate
+        })
+      );
+
+      renderBars(
+        byId("live-priorities"),
+        (live.priority_distribution || []).map(function (row) {
+          return { label: row.priority || "Unscored", value: row.count };
+        }),
+        "No priority records in this view."
+      );
+
+      renderBars(
+        byId("live-categories"),
+        (live.category_distribution || []).map(function (row) {
+          return { label: categoryLabel(row.category), value: row.count };
+        }),
+        "No live category records in this view."
+      );
+
+      byId("live-dept-title").textContent = "Department workload";
+      byId("live-dept-cap").textContent = "Live complaints routed to each verified department.";
+      renderBars(
+        byId("live-departments"),
+        (live.department_workload || []).map(function (row) {
+          return { label: row.name, value: row.count };
+        }),
+        "No routed live complaints in this view."
+      );
+
+      fillCityOptions(live.city_distribution || []);
+      renderBars(
+        byId("live-cities"),
+        (live.city_distribution || []).map(function (row) {
+          return { label: row.city || "Unspecified", value: row.count };
+        }),
+        "No city records in this view."
+      );
+
+      byId("live-city-chart-wrap").hidden = false;
+      byId("live-note").hidden = false;
+      byId("live-summary").hidden = false;
+      hideState(status);
+    });
+  }
+
+  function loadOfficerSummary() {
+    var status = byId("live-status");
+
+    return Promise.all([
+      api("/officer/overview", { token: state.token }),
+      api("/officer/issues?scope=all&limit=200", { token: state.token })
+    ]).then(function (results) {
+      var overview = results[0] || {};
+      var issues = results[1] || [];
+      var counts = overview.counts || {};
+      var department = overview.department || {};
+
+      byId("live-total").textContent = num(counts.total_live_routed);
+      byId("live-assigned").textContent = num(counts.assigned_to_me);
+      byId("live-unassigned").textContent = num(counts.unclaimed);
+      byId("live-review").textContent = num(counts.in_progress);
+      byId("live-stat-2-label").textContent = "Assigned to me";
+      byId("live-stat-3-label").textContent = "Unclaimed";
+      byId("live-stat-4-label").textContent = "In progress";
+      byId("live-total-note").textContent = department.name || "Department scope";
+
+      var statusCounts = { reported: 0, acknowledged: 0, in_progress: 0, resolved: 0, rejected: 0, duplicate: 0 };
+      var categories = {};
+      var priorities = {};
+      issues.forEach(function (issue) {
+        var key = String(issue.status || "").toLowerCase();
+        if (Object.prototype.hasOwnProperty.call(statusCounts, key)) {
+          statusCounts[key] += 1;
+        }
+        var cat = issue.category || "Other";
+        categories[cat] = (categories[cat] || 0) + 1;
+        var prio = issue.priority_level || "Unscored";
+        priorities[prio] = (priorities[prio] || 0) + 1;
+      });
+
+      renderStatus(byId("live-status-chart"), byId("live-status-legend"), statusEntries(statusCounts));
+
+      renderBars(
+        byId("live-priorities"),
+        Object.keys(priorities).map(function (key) {
+          return { label: key, value: priorities[key] };
+        }).sort(function (a, b) { return b.value - a.value; }),
+        "No live records in this queue."
+      );
+
+      renderBars(
+        byId("live-categories"),
+        Object.keys(categories).map(function (key) {
+          return { label: categoryLabel(key), value: categories[key] };
+        }).sort(function (a, b) { return b.value - a.value; }),
+        "No live records in this queue."
+      );
+
+      renderBars(
+        byId("live-departments"),
+        [{ label: department.name || "Department", value: counts.total_live_routed || 0 }],
+        "No routed live complaints."
+      );
+      byId("live-dept-title").textContent = "Department scope";
+      byId("live-dept-cap").textContent = "Server-enforced department queue. Cross-department records are never returned.";
+
+      byId("live-city-chart-wrap").hidden = true;
+      byId("live-note").hidden = false;
+      byId("live-note").lastElementChild.textContent =
+        "Charts for officer accounts are computed from up to 200 complaints in the department queue; count cards use the department overview totals. Live and historical figures remain separate.";
+
+      byId("live-summary").hidden = false;
+      hideState(status);
+    });
+  }
+
+  function boot() {
+    byId("hist-filters").addEventListener("submit", function (event) {
+      event.preventDefault();
+      loadHistorical();
+    });
+    byId("hist-reset").addEventListener("click", function () {
+      byId("hist-from").value = "";
+      byId("hist-to").value = "";
+      loadHistorical();
+    });
+
+    byId("live-login").addEventListener("submit", function (event) {
+      event.preventDefault();
+      var email = byId("live-email").value.trim();
+      var password = byId("live-password").value;
+      var status = byId("live-login-status");
+      setState(status, "loading", "Signing in…");
+
+      fetch(API_PREFIX + "/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email, password: password })
+      }).then(function (response) {
+        return readJson(response).then(function (payload) {
+          if (!response.ok) {
+            throw new Error(errorMessage(payload, "Sign-in failed."));
+          }
+          return payload;
+        });
+      }).then(function (payload) {
+        var role = String(payload && payload.user && payload.user.role || "").toLowerCase();
+        if (role !== "admin" && role !== "officer") {
+          throw new Error("Live analytics are restricted to officer and administrator accounts.");
+        }
+        state.token = payload.access_token;
+        try { window.sessionStorage.setItem(TOKEN_KEY, state.token); } catch (error) { /* ignore */ }
+        byId("live-password").value = "";
+        setState(status, "ok", "Signed in. Loading live analytics…");
+        loadLive();
+      }).catch(function (error) {
+        setState(status, "error", error.message);
+      });
+    });
+
+    byId("live-signout").addEventListener("click", function () {
+      signOut("Signed out. Live analytics are hidden until you sign in again.");
+    });
+
+    byId("live-filters").addEventListener("submit", function (event) {
+      event.preventDefault();
+      loadLive();
+    });
+    byId("live-reset").addEventListener("click", function () {
+      byId("live-city").value = "";
+      byId("live-from").value = "";
+      byId("live-to").value = "";
+      loadLive();
+    });
+
+    loadHistorical();
+
+    var saved = null;
+    try { saved = window.sessionStorage.getItem(TOKEN_KEY); } catch (error) { saved = null; }
+    if (saved) {
+      state.token = saved;
+      setState(byId("live-login-status"), "loading", "Restoring your tab session…");
+      loadLive();
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
+})();
+</script>
+</body>
+</html>

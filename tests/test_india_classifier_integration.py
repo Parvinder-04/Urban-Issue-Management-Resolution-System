@@ -64,14 +64,6 @@ V2_2_LABELS = [
     "Trees_Environment",
 ]
 
-# The public release intentionally does not redistribute the Bengaluru model
-# artifact. Tests that require the real artifact are skipped with a clear
-# reason; no test is deleted and no substitute model is used.
-MODEL_ARTIFACT_AVAILABLE = BENGALURU_MODEL_PATH.is_file()
-MODEL_ARTIFACT_SKIP_REASON = (
-    "Bengaluru classifier artifact is not redistributed in this public release"
-)
-
 
 class _FakeEstimator:
     def __init__(self, classes):
@@ -130,7 +122,6 @@ class TestCityNormalization(unittest.TestCase):
 
 
 class TestBengaluruClassifier(unittest.TestCase):
-    @unittest.skipUnless(MODEL_ARTIFACT_AVAILABLE, MODEL_ARTIFACT_SKIP_REASON)
     def test_v2_2_artifact_path_is_project_relative_and_present(self):
         self.assertTrue(BENGALURU_MODEL_PATH.is_file())
         self.assertEqual(
@@ -143,7 +134,6 @@ class TestBengaluruClassifier(unittest.TestCase):
             / "classifier.joblib",
         )
 
-    @unittest.skipUnless(MODEL_ARTIFACT_AVAILABLE, MODEL_ARTIFACT_SKIP_REASON)
     def test_real_v2_2_model_loads_with_expected_pipeline(self):
         classifier = IssueClassifier()
         model = classifier._load_bengaluru_model()
@@ -161,7 +151,6 @@ class TestBengaluruClassifier(unittest.TestCase):
         self.assertTrue(vectorizer.sublinear_tf)
         self.assertEqual(vectorizer.strip_accents, "unicode")
 
-    @unittest.skipUnless(MODEL_ARTIFACT_AVAILABLE, MODEL_ARTIFACT_SKIP_REASON)
     def test_metadata_is_bengaluru_experimental_only(self):
         metadata = IssueClassifier().metadata
         self.assertEqual(metadata["geography"], CITY_BENGALURU)
@@ -266,7 +255,6 @@ class TestBengaluruClassifier(unittest.TestCase):
         self.assertEqual(result.source, "needs_clarification")
         self.assertTrue(result.needs_review)
 
-    @unittest.skipUnless(MODEL_ARTIFACT_AVAILABLE, MODEL_ARTIFACT_SKIP_REASON)
     def test_model_is_loaded_once_not_per_complaint(self):
         classifier = IssueClassifier()
         with patch(
@@ -616,7 +604,6 @@ class TestIssueSubmissionRegression(unittest.TestCase):
         self.assertEqual(historical.status, models.IssueStatus.REPORTED)
 
 
-@unittest.skipUnless(MODEL_ARTIFACT_AVAILABLE, MODEL_ARTIFACT_SKIP_REASON)
 class TestRealCandidateIntegration(unittest.TestCase):
     """Integration with the actual V2.2 artifact using isolated text only."""
 

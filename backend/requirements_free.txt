@@ -1,0 +1,11 @@
+# Free-tier deployment dependencies for UIMRS (Task 15).
+#
+# Install on top of backend/requirements.txt:
+#   pip install -r backend/requirements.txt -r backend/requirements_free.txt
+#
+# psycopg2-binary is required for Neon/Postgres. cloudinary is required only
+# when EVIDENCE_STORAGE_BACKEND=cloudinary is used; database-backed storage
+# needs no extra package.
+
+psycopg2-binary==2.9.10
+cloudinary==1.41.0

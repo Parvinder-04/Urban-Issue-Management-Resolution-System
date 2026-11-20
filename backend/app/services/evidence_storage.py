@@ -205,6 +205,64 @@ def delete_evidence(storage_key: str, base_dir: str | Path | None = None) -> boo
     return _unlink_quietly(path)
 
 
+def evidence_storage_backend() -> str:
+    """Return the configured evidence storage backend.
+
+    ``local`` (default) keeps the existing filesystem behaviour.
+    ``database`` stores validated bytes in the application database.
+    """
+    return os.getenv("EVIDENCE_STORAGE_BACKEND", "local").strip().lower()
+
+
+def compress_image_bytes(data: bytes, image_format: str) -> bytes:
+    """Resize and re-encode an image to conserve database storage.
+
+    The image is decoded through OpenCV, resized so its longest side is at most
+    1600 pixels, and re-encoded with a sensible quality setting. If any step
+    fails the original bytes are returned unchanged.
+    """
+    import cv2
+    import numpy as np
+
+    if not data:
+        return data
+
+    buffer = np.frombuffer(data, dtype=np.uint8)
+    if buffer.size == 0:
+        return data
+    img = cv2.imdecode(buffer, cv2.IMREAD_COLOR)
+    if img is None:
+        return data
+
+    height, width = img.shape[:2]
+    max_dimension = 1600
+    if max(height, width) > max_dimension:
+        scale = max_dimension / max(height, width)
+        img = cv2.resize(
+            img,
+            (max(1, int(width * scale)), max(1, int(height * scale))),
+            interpolation=cv2.INTER_AREA,
+        )
+
+    extension = FORMAT_EXTENSIONS.get(image_format)
+    if extension is None:
+        return data
+
+    if image_format == "jpeg":
+        params = [cv2.IMWRITE_JPEG_QUALITY, 85]
+    elif image_format == "webp":
+        params = [cv2.IMWRITE_WEBP_QUALITY, 85]
+    elif image_format == "png":
+        params = [cv2.IMWRITE_PNG_COMPRESSION, 9]
+    else:
+        return data
+
+    ok, encoded = cv2.imencode(extension, img, params)
+    if not ok:
+        return data
+    return bytes(encoded.tobytes())
+
+
 def _unlink_quietly(path: Path) -> bool:
     try:
         path.unlink()

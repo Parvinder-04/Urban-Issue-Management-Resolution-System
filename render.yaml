@@ -1,0 +1,33 @@
+# Render Blueprint for the FREE-TIER UIMRS deployment (Task 15).
+#
+# This uses only Render's permanent free web service. It expects a Neon free
+# PostgreSQL database and database-backed image storage. It must not be used
+# to create a paid resource.
+
+services:
+  - type: web
+    name: uimrs-free
+    runtime: docker
+    plan: free
+    region: singapore
+    branch: main
+    autoDeploy: false
+    dockerfilePath: ./deploy/Dockerfile
+    dockerContext: .
+    dockerCommand: sh /app/deploy/start.sh
+    healthCheckPath: /ready
+    envVars:
+      - key: UIMRS_ENV
+        value: production
+      - key: UIMRS_FRONTEND_MODE
+        value: india
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: EVIDENCE_STORAGE_BACKEND
+        value: database
+      - key: UIMRS_SEED_ADMIN_EMAIL
+        sync: false
+      - key: UIMRS_SEED_ADMIN_PASSWORD
+        sync: false

@@ -2,13 +2,16 @@
 Issues Router — Core pipeline of the system.
 Secured with JWT authentication, RBAC authorization, and strict historical record protection.
 """
+import os
 import random
 import string
+import uuid
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Optional
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -25,9 +28,12 @@ from app.services.classification_service import (
 from app.services.evidence_storage import (
     EvidenceStorageError,
     EvidenceTooLargeError,
+    FORMAT_EXTENSIONS,
     UnsupportedImageTypeError,
+    compress_image_bytes,
     delete_evidence,
     detect_image_format,
+    evidence_storage_backend,
     media_type_for_path,
     resolve_evidence_path,
     store_evidence,
@@ -535,26 +541,44 @@ async def upload_issue_image(
             detail="The uploaded file is not a valid decodable image.",
         )
 
-    try:
-        stored = store_evidence(content, detected_format)
-    except EvidenceTooLargeError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_413_CONTENT_TOO_LARGE, detail=str(exc)
-        ) from exc
-    except UnsupportedImageTypeError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, detail=str(exc)
-        ) from exc
-    except EvidenceStorageError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Could not store the uploaded evidence image.",
-        ) from exc
+    backend = evidence_storage_backend()
+    stored = None
+    storage_key: str
+    image_data: bytes | None = None
+
+    if backend == "database":
+        # Keep the database small on the free tier: resize large images and
+        # re-encode them before storing the bytes. Verification already ran on
+        # the original bytes, so quality checks are unaffected.
+        image_data = compress_image_bytes(content, detected_format)
+        image_id = str(uuid.uuid4())
+        extension = FORMAT_EXTENSIONS[detected_format]
+        storage_key = f"db:{image_id}{extension}"
+    else:
+        try:
+            stored = store_evidence(content, detected_format)
+        except EvidenceTooLargeError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_413_CONTENT_TOO_LARGE, detail=str(exc)
+            ) from exc
+        except UnsupportedImageTypeError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, detail=str(exc)
+            ) from exc
+        except EvidenceStorageError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Could not store the uploaded evidence image.",
+            ) from exc
+        storage_key = stored.storage_key
 
     image = models.IssueImage(
+        id=image_id if backend == "database" else None,
         issue_id=issue_id,
         # Store the relative storage key, never an absolute filesystem path.
-        image_url=stored.storage_key,
+        # For database-backed storage this is a ``db:<uuid>.ext`` sentinel.
+        image_url=storage_key,
+        image_data=image_data,
         blur_score=result.blur_score,
         brightness=result.brightness,
         resolution_width=result.resolution[0],
@@ -568,7 +592,8 @@ async def upload_issue_image(
         db.refresh(image)
     except Exception:
         db.rollback()
-        delete_evidence(stored.storage_key)
+        if backend != "database" and stored is not None:
+            delete_evidence(stored.storage_key)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Could not save the uploaded evidence image.",
@@ -629,6 +654,25 @@ def get_issue_image_content(
     )
     if not image:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Evidence image not found")
+
+    if image.image_url.startswith("db:"):
+        # Database-backed evidence: bytes live in the application database.
+        suffix = image.image_url[len("db:"):]
+        media_type = media_type_for_path(Path(suffix))
+        if not image.image_data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Evidence image not available",
+            )
+        return Response(
+            content=image.image_data,
+            media_type=media_type,
+            headers={
+                "Content-Disposition": f'inline; filename="{Path(suffix).name}"',
+                "Cache-Control": "private, no-store",
+                "X-Content-Type-Options": "nosniff",
+            },
+        )
 
     try:
         path = resolve_evidence_path(image.image_url)

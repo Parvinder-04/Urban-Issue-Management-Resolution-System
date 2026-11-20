@@ -1,9 +1,9 @@
 """Application configuration with a canonical, working-directory-independent DB path.
 
 The operational database is selected by ``DATABASE_URL``. When that variable is
-not set, the public release uses a local, Git-ignored database under
-``local_data/uimrs_public.db``. No historical or private database is chosen
-implicitly.
+not set, local development uses the separate India working copy
+``uimrs_india_dev.db`` in the project root. The legacy ``uimrs.db`` and the
+protected ``uimrs_india_candidate.db`` are never chosen implicitly.
 
 Frontend selection is a separate concern, controlled only by
 ``UIMRS_FRONTEND_MODE`` (``india`` or ``legacy``). It never affects API
@@ -14,18 +14,15 @@ from pathlib import Path
 from functools import lru_cache
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
-LOCAL_DATA_DIR = PROJECT_ROOT / "local_data"
-DEV_DB_NAME = "uimrs_public.db"
-DEV_DB_PATH = LOCAL_DATA_DIR / DEV_DB_NAME
-# Legacy names are retained only so old configuration checks fail closed; the
-# public release never creates or selects these files implicitly.
+DEV_DB_NAME = "uimrs_india_dev.db"
+DEV_DB_PATH = PROJECT_ROOT / DEV_DB_NAME
 LEGACY_DB_PATH = PROJECT_ROOT / "uimrs.db"
 CANDIDATE_DB_PATH = PROJECT_ROOT / "uimrs_india_candidate.db"
 
 # ---------- Frontend selection (independent of the database) ----------
 FRONTEND_DIR = PROJECT_ROOT / "frontend"
 FRONTEND_PAGES = {
-    "india": "index_india_staging.html",
+    "india": "uimrs.html",
     "legacy": "index.html",
 }
 DEFAULT_FRONTEND_MODE = "india"
@@ -97,7 +94,7 @@ def frontend_dashboard_path(mode: str | None = None, environ=None) -> Path:
 
 
 def default_database_url() -> str:
-    """Local-development default: the public, Git-ignored local database."""
+    """Local-development default: the separate India development working copy."""
     return f"sqlite:///{DEV_DB_PATH.as_posix()}"
 
 
@@ -196,12 +193,19 @@ def resolve_allowed_origins(environ=None) -> list[str]:
     """Resolve the CORS allow-list from the environment.
 
     Wildcard origins are rejected because credentialed requests cannot be
-    safely combined with ``*``.
+    safely combined with ``*``. When no explicit list is configured, a hosting
+    platform's own public URL (``RENDER_EXTERNAL_URL``) is trusted alongside the
+    local development origins, so a deployed instance works without hard-coding
+    its hostname in the repository.
     """
     env = os.environ if environ is None else environ
     raw = (env.get("ALLOWED_ORIGINS") or env.get("CORS_ALLOWED_ORIGINS") or "").strip()
     if not raw:
-        return list(DEFAULT_ALLOWED_ORIGINS)
+        origins = list(DEFAULT_ALLOWED_ORIGINS)
+        hosted_url = (env.get("RENDER_EXTERNAL_URL") or "").strip().rstrip("/")
+        if hosted_url and hosted_url not in origins:
+            origins.insert(0, hosted_url)
+        return origins
 
     origins = []
     seen = set()
@@ -233,7 +237,7 @@ class Settings:
     HOTSPOT_RADIUS_METERS = 350.0
     HOTSPOT_MIN_ISSUES = 4
     ML_CONFIDENCE_THRESHOLD = 0.40
-    UPLOAD_DIR = os.getenv("UPLOAD_DIR", str(LOCAL_DATA_DIR / "uploads"))
+    UPLOAD_DIR = os.getenv("UPLOAD_DIR", str(PROJECT_ROOT / "uploads"))
     MAX_UPLOAD_SIZE_MB = 10
     ALLOWED_ORIGINS = resolve_allowed_origins()
 

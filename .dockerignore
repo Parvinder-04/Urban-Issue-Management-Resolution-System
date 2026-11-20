@@ -1,0 +1,38 @@
+# Keep operational data, secrets and local tooling out of the deployment image.
+
+**/__pycache__
+**/*.py[cod]
+**/*.pyo
+.pytest_cache
+.coverage
+htmlcov
+
+# Environments and secrets
+backend/venv
+.venv
+venv
+.env
+.env.*
+!.env.example
+
+# Databases, backups and uploaded evidence (state lives on the disk)
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+backups
+uploads
+test_environment
+
+# Generated/local-only material
+data
+dist
+team_resources
+.pytest_cache
+.git
+.gitignore
+
+# Documentation and test sources are not needed at runtime.
+tests
+docs
+task_reports

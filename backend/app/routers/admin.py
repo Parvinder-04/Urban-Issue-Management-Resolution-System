@@ -64,11 +64,22 @@ def _operation_error(exc: AdminOperationError) -> HTTPException:
 def admin_overview(
     city: Optional[str] = Query(default=None, max_length=120),
     department_id: Optional[str] = Query(default=None, max_length=36),
+    date_from: Optional[str] = Query(default=None, max_length=40),
+    date_to: Optional[str] = Query(default=None, max_length=40),
     current_user: models.User = Depends(admin_required),
     db: Session = Depends(get_db),
 ):
     """Real operational and historical counts, never mixed together."""
-    return build_overview(db, city=city, department_id=department_id)
+    try:
+        return build_overview(
+            db,
+            city=city,
+            department_id=department_id,
+            date_from=date_from,
+            date_to=date_to,
+        )
+    except AdminOperationError as exc:
+        raise _operation_error(exc) from exc
 
 
 @router.get("/issues", response_model=list[schemas.AdminIssueOut])

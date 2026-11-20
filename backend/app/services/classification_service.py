@@ -425,12 +425,8 @@ class IssueClassifier:
                 0.0,
                 "needs_clarification",
                 needs_review=True,
-                review_reason=(
-                    "Bengaluru classifier model artifact is unavailable because "
-                    "it is not installed in this public release. See "
-                    "backend/app/ml_models/README.md for authorised installation."
-                ),
-                model_version=None,
+                review_reason="Bengaluru V2.2 model unavailable or unreadable",
+                model_version=BENGALURU_MODEL_VERSION,
             )
 
         classes, probabilities = scores

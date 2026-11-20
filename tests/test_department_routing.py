@@ -679,22 +679,6 @@ class TestLiveDirectoryReadOnly(unittest.TestCase):
     def setUp(self):
         if not DEV_DB.exists():
             self.skipTest("development database not present")
-        connection = sqlite3.connect(
-            f"file:{DEV_DB.as_posix()}?mode=ro", uri=True
-        )
-        try:
-            has_directory = connection.execute(
-                "SELECT 1 FROM sqlite_master "
-                "WHERE type = 'table' AND name = 'departments'"
-            ).fetchone()
-        finally:
-            connection.close()
-        if not has_directory:
-            # A clean checkout (or the team package) has no operational
-            # development database, and another test may leave an empty file
-            # behind. Skip instead of failing on a database that was never
-            # provisioned.
-            self.skipTest("development database has no department directory")
         self.connection = sqlite3.connect(
             f"file:{DEV_DB.as_posix()}?mode=ro", uri=True
         )

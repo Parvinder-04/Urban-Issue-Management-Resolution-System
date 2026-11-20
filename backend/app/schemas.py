@@ -324,11 +324,15 @@ class AdminLiveOverviewOut(BaseModel):
     needs_ai_review: int
     department_workload: list[AdminDepartmentWorkloadOut]
     city_distribution: list[AdminCityCountOut]
+    category_distribution: list[dict] = []
+    priority_distribution: list[dict] = []
 
 
 class AdminOverviewFiltersOut(BaseModel):
     city: Optional[str] = None
     department_id: Optional[str] = None
+    date_from: Optional[str] = None
+    date_to: Optional[str] = None
 
 
 class AdminOverviewOut(BaseModel):

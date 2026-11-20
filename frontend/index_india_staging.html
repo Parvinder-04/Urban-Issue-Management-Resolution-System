@@ -18,11 +18,6 @@
 <main class="main">
 <div class="top"><div><h1 id="page-title">Authority Dashboard</h1><div class="subtitle">AI-assisted civic issue monitoring and resolution</div></div></div>
 
-<section id="empty-state-banner" class="section" hidden style="margin-bottom:18px;border-left:4px solid #c47f00;background:#fff8e8">
-<h2 style="margin-top:0">No historical complaint data is configured</h2>
-<div class="muted">This installation has an empty database. Historical charts, tables, hotspots and resolution metrics remain empty until an operator loads an authorised historical dataset. No records or metrics are fabricated.</div>
-</section>
-
 <section id="overview" class="page active">
 <div class="cards"><div class="card"><div class="label">Historical Complaints</div><div class="value" id="total">—</div></div><div class="card"><div class="label">Reported / In Progress</div><div class="value" id="open">—</div></div><div class="card"><div class="label">Resolved This Week</div><div class="value" id="resolved">—</div></div><div class="card"><div class="label">Avg. Resolution</div><div class="value" id="avg">—</div></div></div>
 <div class="grid"><section class="section"><h2>Issue Distribution</h2><div class="bars" id="bars"></div></section><section class="section"><h2>Geographic Complaint Clusters</h2><div id="overview-map" class="map"></div><div class="legend">Historical Bengaluru complaint coordinates · Geographic clustering</div></section></div>
@@ -134,16 +129,6 @@ function sourceId(x){
     : (x.ticket ?? 'Not available');
 }
 
-function emptyTableRow(colspan,message){
-  const tr=document.createElement('tr');
-  const td=document.createElement('td');
-  td.colSpan=colspan;
-  td.className='muted';
-  td.textContent=message;
-  tr.appendChild(td);
-  return tr;
-}
-
 function renderRows(items,target,full=false){
   const rows=[...items].sort(
     (a,b)=>(Date.parse(b.created_at||'')||0)-(Date.parse(a.created_at||'')||0)
@@ -151,15 +136,6 @@ function renderRows(items,target,full=false){
 
   const tbody=document.querySelector(target);
   const fragment=document.createDocumentFragment();
-
-  if(!rows.length){
-    fragment.appendChild(emptyTableRow(
-      full?7:5,
-      'No historical complaint records are available in this installation.'
-    ));
-    tbody.replaceChildren(fragment);
-    return;
-  }
 
   rows.forEach(x=>{
     const tr=document.createElement('tr');
@@ -195,18 +171,6 @@ async function renderDepartments(){
   const tbody=document.querySelector('#department-table');
   const fragment=document.createDocumentFragment();
 
-  if(!rows.length){
-    fragment.appendChild(emptyTableRow(
-      6,
-      'No historical source-agency records are available in this installation.'
-    ));
-    tbody.replaceChildren(fragment);
-    document.querySelector('#department-unassigned').textContent=
-      'No historical source-agency records are available in this installation.';
-    document.querySelector('#analytics-departments').textContent='0';
-    return;
-  }
-
   rows.forEach(x=>{
     const tr=document.createElement('tr');
     tr.appendChild(textCell(x.source_agency || x.name,{fallback:'Not recorded in source'}));
@@ -228,15 +192,8 @@ function renderAnalytics(){
   const cats=dashboardData.category_breakdown||[];
   document.querySelector('#analytics-categories').textContent=cats.length;
 
-  const container=document.querySelector('#analytics-breakdown');
-  if(!cats.length){
-    container.replaceChildren(
-      element('div','muted','No historical category analytics are available in this installation.')
-    );
-    return;
-  }
-
   const max=Math.max(1,...cats.map(c=>Number(c.count)||0));
+  const container=document.querySelector('#analytics-breakdown');
   const fragment=document.createDocumentFragment();
 
   [...cats].sort((a,b)=>(Number(b.count)||0)-(Number(a.count)||0)).forEach(x=>{
@@ -356,13 +313,6 @@ async function load(){
     document.querySelector('#total').textContent=dashboardData.total_issues;
     document.querySelector('#open').textContent=dashboardData.open_issues;
 
-    const hasHistoricalRecords=
-      Number(dashboardData.total_issues)>0 || issueData.length>0;
-    const emptyBanner=document.querySelector('#empty-state-banner');
-    if(emptyBanner){
-      emptyBanner.hidden=hasHistoricalRecords;
-    }
-
     document.querySelector('#resolved').textContent=
       dashboardData.resolved_this_week==null
         ? 'Not available' : dashboardData.resolved_this_week;
@@ -376,23 +326,17 @@ async function load(){
 
     const barsContainer=document.querySelector('#bars');
     const barsFragment=document.createDocumentFragment();
-    if(!cats.length){
-      barsFragment.appendChild(
-        element('div','muted','No historical category data is available in this installation.')
-      );
-    }else{
-      [...cats].sort((a,b)=>(Number(b.count)||0)-(Number(a.count)||0)).forEach(x=>{
-        const row=element('div','barrow');
-        row.appendChild(element('span',null,pretty(x.category)));
-        const bar=element('div','bar');
-        const fill=element('div','fill');
-        fill.style.width=`${Math.max(3,(Number(x.count)||0)/max*100)}%`;
-        bar.appendChild(fill);
-        row.appendChild(bar);
-        row.appendChild(element('b',null,String(Number(x.count)||0)));
-        barsFragment.appendChild(row);
-      });
-    }
+    [...cats].sort((a,b)=>(Number(b.count)||0)-(Number(a.count)||0)).forEach(x=>{
+      const row=element('div','barrow');
+      row.appendChild(element('span',null,pretty(x.category)));
+      const bar=element('div','bar');
+      const fill=element('div','fill');
+      fill.style.width=`${Math.max(3,(Number(x.count)||0)/max*100)}%`;
+      bar.appendChild(fill);
+      row.appendChild(bar);
+      row.appendChild(element('b',null,String(Number(x.count)||0)));
+      barsFragment.appendChild(row);
+    });
     barsContainer.replaceChildren(barsFragment);
 
     renderRows(issueData.slice(0,10),'#overview-issues');
@@ -400,9 +344,7 @@ async function load(){
 
     const note=document.querySelector('#issue-data-note');
     if(note){
-      note.textContent=issueData.length
-        ? `Showing the latest ${issueData.length} historical Bengaluru records returned by the API. Total records in database: ${dashboardData.total_issues}.`
-        : 'No historical complaint records are configured. This installation starts with an empty database; no records are fabricated.';
+      note.textContent=`Showing the latest ${issueData.length} historical Bengaluru records returned by the API. Total records in database: ${dashboardData.total_issues}.`;
     }
 
     await renderDepartments();
@@ -412,13 +354,7 @@ async function load(){
     const hotspots=dashboardData.hotspots||[];
     if(!hotspots.length){
       hotspotList.replaceChildren(
-        element(
-          'div',
-          'muted',
-          hasHistoricalRecords
-            ? 'No geographic cluster meets the current threshold.'
-            : 'No geographic complaint clusters are available because no historical records are configured.'
-        )
+        element('div','muted','No geographic cluster meets the current threshold.')
       );
     }else{
       const hotspotFragment=document.createDocumentFragment();

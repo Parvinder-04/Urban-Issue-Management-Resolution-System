@@ -2,8 +2,8 @@
 UIMRS Task 1 — Database configuration, schema guard and working-copy safety.
 
 Every test runs against synthetic databases inside a temporary directory. The
-public local database (``local_data/uimrs_public.db``) is never opened or
-modified.
+protected databases (``uimrs.db``, ``uimrs_india_candidate.db``) and the
+development working copy (``uimrs_india_dev.db``) are never opened or modified.
 """
 import hashlib
 import os
@@ -70,21 +70,19 @@ class TestDatabaseUrlSelection(unittest.TestCase):
     def test_default_points_at_separate_development_database(self):
         url = default_database_url()
         self.assertEqual(url, sqlite_url(DEV_DB_PATH))
-        self.assertTrue(url.endswith("uimrs_public.db"))
+        self.assertTrue(url.endswith("uimrs_india_dev.db"))
         self.assertEqual(sqlite_path_from_url(url), DEV_DB_PATH)
 
     def test_default_never_selects_protected_databases(self):
         selected = Path(sqlite_path_from_url(default_database_url())).resolve()
         self.assertNotEqual(selected, LEGACY_DB_PATH.resolve())
         self.assertNotEqual(selected, CANDIDATE_DB_PATH.resolve())
-        self.assertEqual(DEV_DB_PATH.name, "uimrs_public.db")
+        self.assertEqual(DEV_DB_PATH.name, "uimrs_india_dev.db")
 
     def test_default_path_is_project_rooted_not_deployment_specific(self):
         selected = Path(sqlite_path_from_url(default_database_url()))
         self.assertTrue(selected.is_absolute())
-        self.assertEqual(
-            selected.parent.resolve(), (CONFIG_PROJECT_ROOT / "local_data").resolve()
-        )
+        self.assertEqual(selected.parent.resolve(), CONFIG_PROJECT_ROOT.resolve())
         self.assertNotIn("postgres", default_database_url().lower())
 
     def test_environment_override_wins(self):

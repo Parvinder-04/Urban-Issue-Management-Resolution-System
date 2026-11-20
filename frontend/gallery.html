@@ -1,0 +1,1149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3D Issue Gallery — UIMRS</title>
+<meta name="description" content="Interactive Three.js gallery illustrating the nine UIMRS civic issue categories as procedural 3D models. Illustrative only — not AI image recognition and not a digital twin.">
+<meta name="theme-color" content="#0a1f33">
+<link rel="stylesheet" href="/assets/uimrs.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230a1f33'/%3E%3Cpath d='M18 22h28M18 32h28M18 42h18' stroke='%232dd4bf' stroke-width='6' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+  .gal-hero {
+    background:
+      radial-gradient(800px 380px at 10% -20%, #16507a 0%, transparent 60%),
+      radial-gradient(700px 400px at 100% 0%, rgba(13,148,136,.25) 0%, transparent 55%),
+      linear-gradient(160deg, #0a1f33, #0c2740 70%, #081a2b);
+    color: #eef6fb; padding: 44px 0 36px;
+  }
+  .gal-hero h1 { color: #fff; margin: 0 0 10px; font-size: clamp(28px, 4vw, 42px); letter-spacing: -.03em; }
+  .gal-hero p { color: #b9d2e2; margin: 0; max-width: 780px; font-size: 15px; }
+  .gal-hero .uimrs-eyebrow { color: #6ee7db; }
+  .gal-hero .uimrs-eyebrow::before { background: #2dd4bf; }
+  .gal-hero-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+  .gal-hero-tags span {
+    font-size: 10.5px; font-weight: 750; letter-spacing: .06em; text-transform: uppercase;
+    background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.16);
+    color: #cfe6f2; padding: 5px 9px; border-radius: 999px;
+  }
+
+  .gal-layout { display: grid; grid-template-columns: 280px minmax(0,1fr); gap: 20px; align-items: start; }
+
+  .gal-list { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; box-shadow: var(--shadow-sm); }
+  .gal-list h2 { margin: 0 0 4px; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+  .gal-list p { margin: 0 0 10px; font-size: 11.5px; color: var(--muted); }
+  .gal-cat {
+    display: flex; align-items: center; gap: 9px; width: 100%;
+    background: transparent; border: 1px solid transparent; border-radius: 10px;
+    padding: 9px 10px; margin: 3px 0; font: inherit; font-size: 12.5px;
+    color: var(--ink-2); text-align: left; cursor: pointer;
+  }
+  .gal-cat:hover { background: #f1f7fb; }
+  .gal-cat.active { background: var(--teal-wash); border-color: #c6efe9; color: #0f5f59; font-weight: 750; }
+  .gal-cat .swatch { width: 9px; height: 9px; border-radius: 3px; flex: none; }
+  .gal-cat .idx { margin-left: auto; font-size: 10px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  .gal-viewer-card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: hidden; }
+  .gal-viewer {
+    position: relative; min-height: 480px; height: min(62vh, 620px);
+    background:
+      radial-gradient(800px 420px at 50% 0%, #164b70 0%, transparent 62%),
+      linear-gradient(180deg, #0b2438, #0a1f33 70%, #071726);
+  }
+  #gal-canvas { display: block; width: 100%; height: 100%; cursor: grab; touch-action: none; outline: none; }
+  #gal-canvas:active { cursor: grabbing; }
+  #gal-canvas:focus-visible { outline: 3px solid rgba(45,212,191,.7); outline-offset: -3px; }
+
+  .gal-overlay {
+    position: absolute; inset: 0; display: grid; place-items: center;
+    background: rgba(7,23,39,.72); color: #dff2f8; font-size: 13px;
+    text-align: center; padding: 24px; z-index: 2;
+  }
+  .gal-overlay[hidden] { display: none; }
+  .gal-overlay .panel { max-width: 420px; }
+  .gal-overlay b { display: block; font-size: 15px; margin-bottom: 6px; color: #fff; }
+  .gal-overlay p { margin: 0 0 12px; color: #b9d2e2; }
+  .gal-spinner {
+    width: 34px; height: 34px; border-radius: 50%;
+    border: 3px solid rgba(94,234,212,.25); border-top-color: #5eead4;
+    margin: 0 auto 14px; animation: galspin .8s linear infinite;
+  }
+  @keyframes galspin { to { transform: rotate(360deg); } }
+
+  .gal-hud {
+    position: absolute; left: 14px; top: 14px; z-index: 3;
+    background: rgba(7,23,39,.62); border: 1px solid rgba(255,255,255,.14);
+    border-radius: 10px; padding: 8px 11px; color: #dff2f8; font-size: 11px;
+    backdrop-filter: blur(6px); max-width: 70%;
+  }
+  .gal-hud b { display: block; font-size: 12px; color: #fff; }
+  .gal-hud span { color: #9fc0d4; }
+
+  .gal-controls {
+    position: absolute; right: 14px; bottom: 14px; z-index: 3;
+    display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end;
+  }
+  .gal-btn {
+    background: rgba(255,255,255,.10); border: 1px solid rgba(255,255,255,.2);
+    color: #eaf6fb; border-radius: 9px; padding: 8px 11px; font: inherit;
+    font-size: 11.5px; font-weight: 700; cursor: pointer; backdrop-filter: blur(6px);
+  }
+  .gal-btn:hover { background: rgba(45,212,191,.2); border-color: rgba(45,212,191,.5); }
+  .gal-toggle {
+    display: inline-flex; align-items: center; gap: 6px; color: #cfe6f2;
+    font-size: 11px; background: rgba(7,23,39,.55); border: 1px solid rgba(255,255,255,.16);
+    border-radius: 9px; padding: 7px 10px;
+  }
+  .gal-toggle input { accent-color: #14b8a6; }
+
+  .gal-info { padding: 16px 20px; border-top: 1px solid var(--line); display: flex; gap: 16px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; }
+  .gal-info h2 { margin: 0 0 4px; font-size: 17px; }
+  .gal-info p { margin: 0; font-size: 12.5px; color: var(--muted); max-width: 640px; }
+  .gal-info .hint { font-size: 11px; color: var(--muted); white-space: nowrap; }
+
+  .gal-footnote { font-size: 11.5px; color: var(--muted); margin-top: 14px; }
+  .gal-fallback { padding: 40px 24px; text-align: center; }
+  .gal-fallback b { display: block; font-size: 16px; margin-bottom: 6px; }
+
+  @media (max-width: 900px) {
+    .gal-layout { grid-template-columns: 1fr; }
+    .gal-list { display: block; }
+    .gal-cat-list { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 4px; }
+    .gal-viewer { min-height: 380px; height: 52vh; }
+  }
+  @media (max-width: 560px) {
+    .gal-cat-list { grid-template-columns: 1fr; }
+    .gal-controls { left: 14px; justify-content: flex-start; }
+    .gal-hud { max-width: calc(100% - 28px); }
+  }
+</style>
+</head>
+<body class="uimrs" data-nav-current="gallery">
+
+<a class="uimrs-skip" href="#main">Skip to main content</a>
+
+<header class="uimrs-nav">
+  <div class="uimrs-nav-inner">
+    <a class="uimrs-brand" href="/" aria-label="UIMRS home">
+      <span class="uimrs-brand-mark" aria-hidden="true">U</span>
+      <span>UIMRS<small>Urban Issue Management</small></span>
+    </a>
+    <button class="uimrs-nav-toggle" type="button" data-uimrs-nav-toggle aria-expanded="false" aria-controls="uimrs-nav-links" aria-label="Toggle navigation menu">&#9776;</button>
+    <nav class="uimrs-nav-links" id="uimrs-nav-links" data-uimrs-nav-links aria-label="Primary">
+      <a href="/" data-nav="home">Home</a>
+      <a href="/dashboard" data-nav="dashboard">Dashboard</a>
+      <a href="/citizen" data-nav="citizen">Citizen Portal</a>
+      <a href="/officer" data-nav="officer">Officer Portal</a>
+      <a href="/admin" data-nav="admin">Admin Portal</a>
+      <a href="/analytics" data-nav="analytics">Analytics</a>
+      <a href="/gallery" data-nav="gallery">3D Gallery</a>
+      <a href="/#future">Future Development</a>
+      <a class="uimrs-nav-cta" href="/citizen">Report an issue</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+<div class="gal-hero">
+  <div class="uimrs-wrap">
+    <p class="uimrs-eyebrow">Interactive 3D gallery</p>
+    <h1>Nine civic issue categories, in three dimensions</h1>
+    <p>
+      Rotate, zoom and inspect a procedural 3D model for each UIMRS complaint
+      category. The models are built in the browser from simple geometry and are
+      locally hosted — no external model files are downloaded.
+    </p>
+    <div class="gal-hero-tags">
+      <span>Illustrative only</span>
+      <span>Not AI image recognition</span>
+      <span>Not a digital twin</span>
+      <span>Three.js &middot; MIT licence</span>
+    </div>
+  </div>
+</div>
+
+<div class="uimrs-section tight">
+  <div class="uimrs-wrap">
+    <div class="gal-layout">
+
+      <aside class="gal-list" aria-label="Issue categories">
+        <h2>Categories</h2>
+        <p>Select a category to build its model.</p>
+        <div class="gal-cat-list" id="gal-cat-list"></div>
+        <div class="uimrs-note grey" style="margin-top:12px">
+          <span aria-hidden="true">&#9432;</span>
+          <span>Models are constructed on demand, so only the selected category is built.</span>
+        </div>
+      </aside>
+
+      <section class="gal-viewer-card" aria-labelledby="gal-title">
+        <div class="gal-viewer">
+          <div class="gal-hud" id="gal-hud" hidden>
+            <b id="gal-hud-title">Category</b>
+            <span id="gal-hud-sub">Drag to rotate &middot; scroll to zoom</span>
+          </div>
+          <canvas id="gal-canvas" tabindex="0" aria-label="Interactive 3D model viewer. Drag to rotate, scroll to zoom, arrow keys rotate, plus and minus zoom."></canvas>
+          <div class="gal-overlay" id="gal-overlay" hidden>
+            <div class="panel" id="gal-overlay-panel"></div>
+          </div>
+          <div class="gal-controls">
+            <label class="gal-toggle" title="Automatically rotate the model">
+              <input type="checkbox" id="gal-autorotate" checked> Auto-rotate
+            </label>
+            <button class="gal-btn" type="button" id="gal-reset">Reset view</button>
+          </div>
+        </div>
+        <div class="gal-info">
+          <div>
+            <h2 id="gal-title">Select a category</h2>
+            <p id="gal-description">
+              Choose one of the nine categories on the left to load its
+              illustrative model.
+            </p>
+          </div>
+          <span class="hint">Drag &middot; scroll &middot; reset</span>
+        </div>
+      </section>
+    </div>
+
+    <p class="gal-footnote">
+      These models illustrate civic issue categories for the project
+      presentation. They are not reconstructions of citizen complaints, not
+      AI-generated scene understanding, and not a live digital twin of any city.
+      Model geometry is built procedurally with three.js r160 (MIT). See
+      <code>docs/TASK15_3D_ATTRIBUTION.md</code> for asset provenance.
+    </p>
+  </div>
+</div>
+
+</main>
+
+<footer class="uimrs-footer">
+  <div class="uimrs-wrap">
+    <div class="uimrs-footer-bottom" style="border-top:0;margin-top:0;padding-top:0">
+      <span>&copy; 2026 UIMRS. Academic project — not an official municipal service.</span>
+      <span><a href="/" style="display:inline;color:#b7cfdf">Home</a> &middot; <a href="/analytics" style="display:inline;color:#b7cfdf">Analytics</a> &middot; <a href="/dashboard" style="display:inline;color:#b7cfdf">Dashboard</a></span>
+    </div>
+  </div>
+</footer>
+
+<script src="/assets/uimrs-nav.js" defer></script>
+<script type="module">
+import * as THREE from "/vendor/three/three.module.min.js";
+
+/* ------------------------------------------------------------------ *
+ * Category catalogue
+ * ------------------------------------------------------------------ */
+const CATEGORIES = [
+  {
+    id: "road",
+    name: "Road Damage / Potholes",
+    swatch: "#f97316",
+    description: "Potholes, broken surfacing, cracked carriageway and damaged road edges reported by citizens.",
+    build: buildRoad
+  },
+  {
+    id: "garbage",
+    name: "Garbage / Waste",
+    swatch: "#22c55e",
+    description: "Accumulated household waste, missed collection, overflowing bins and illegal dumping.",
+    build: buildGarbage
+  },
+  {
+    id: "streetlight",
+    name: "Streetlights",
+    swatch: "#fbbf24",
+    description: "Non-functional, damaged, flickering or missing street lighting on public roads.",
+    build: buildStreetlight
+  },
+  {
+    id: "drainage",
+    name: "Drainage / Sewage",
+    swatch: "#38bdf8",
+    description: "Blocked drains, overflowing sewers, open manholes and localised waterlogging.",
+    build: buildDrainage
+  },
+  {
+    id: "water",
+    name: "Water Supply",
+    swatch: "#60a5fa",
+    description: "Pipeline leakage, low pressure, interrupted supply and damaged public water assets.",
+    build: buildWater
+  },
+  {
+    id: "traffic",
+    name: "Traffic Management / Signals",
+    swatch: "#f43f5e",
+    description: "Signal faults, missing signage and traffic-management hazards at junctions.",
+    build: buildTraffic
+  },
+  {
+    id: "trees",
+    name: "Trees / Environment",
+    swatch: "#4ade80",
+    description: "Fallen trees, dangerous branches, uprooted saplings and environment-related hazards.",
+    build: buildTrees
+  },
+  {
+    id: "construction",
+    name: "Illegal Construction",
+    swatch: "#a78bfa",
+    description: "Unauthorised construction activity, unapproved extensions and encroachment reported for review.",
+    build: buildConstruction
+  },
+  {
+    id: "property",
+    name: "Public Property Damage",
+    swatch: "#f59e0b",
+    description: "Damaged benches, bus shelters, signage, railings and other municipal assets.",
+    build: buildProperty
+  }
+];
+
+/* ------------------------------------------------------------------ *
+ * Small material / mesh helpers
+ * ------------------------------------------------------------------ */
+const MAT = {
+  asphalt: () => new THREE.MeshStandardMaterial({ color: 0x3b424c, roughness: 0.95 }),
+  asphaltDark: () => new THREE.MeshStandardMaterial({ color: 0x22272e, roughness: 1 }),
+  concrete: () => new THREE.MeshStandardMaterial({ color: 0xb9c2cc, roughness: 0.9 }),
+  concreteDark: () => new THREE.MeshStandardMaterial({ color: 0x8794a1, roughness: 0.95 }),
+  metal: () => new THREE.MeshStandardMaterial({ color: 0x8b98a5, roughness: 0.45, metalness: 0.65 }),
+  metalDark: () => new THREE.MeshStandardMaterial({ color: 0x3d4854, roughness: 0.5, metalness: 0.5 }),
+  white: () => new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.7 }),
+  green: () => new THREE.MeshStandardMaterial({ color: 0x1f7a4d, roughness: 0.75 }),
+  greenLight: () => new THREE.MeshStandardMaterial({ color: 0x4ade80, roughness: 0.8 }),
+  blue: () => new THREE.MeshStandardMaterial({ color: 0x2563eb, roughness: 0.5 }),
+  water: () => new THREE.MeshStandardMaterial({ color: 0x0ea5b7, roughness: 0.15, metalness: 0.2, transparent: true, opacity: 0.85 }),
+  amber: () => new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.6 }),
+  red: () => new THREE.MeshStandardMaterial({ color: 0xb42318, roughness: 0.6 }),
+  brown: () => new THREE.MeshStandardMaterial({ color: 0x6b4f34, roughness: 0.95 })
+};
+
+function mesh(geometry, material, x = 0, y = 0, z = 0) {
+  const m = new THREE.Mesh(geometry, material);
+  m.position.set(x, y, z);
+  m.castShadow = true;
+  m.receiveShadow = true;
+  return m;
+}
+
+function box(w, h, d, material, x = 0, y = 0, z = 0) {
+  return mesh(new THREE.BoxGeometry(w, h, d), material, x, y, z);
+}
+
+function cyl(rt, rb, h, material, x = 0, y = 0, z = 0, segments = 24) {
+  return mesh(new THREE.CylinderGeometry(rt, rb, h, segments), material, x, y, z);
+}
+
+function sphere(r, material, x = 0, y = 0, z = 0, detail = 20) {
+  return mesh(new THREE.SphereGeometry(r, detail, detail), material, x, y, z);
+}
+
+function group() {
+  return new THREE.Group();
+}
+
+/* ------------------------------------------------------------------ *
+ * Category models (procedural, illustrative)
+ * ------------------------------------------------------------------ */
+function buildRoad() {
+  const g = group();
+  g.add(box(3.7, 0.24, 2.7, MAT.asphalt(), 0, 0.02, 0));
+
+  // Lane markings, intentionally uneven.
+  for (let i = -2; i <= 2; i += 1) {
+    g.add(box(0.34, 0.015, 0.1, MAT.white(), i * 0.62, 0.145, 1.02));
+    g.add(box(0.34, 0.015, 0.1, MAT.white(), i * 0.62, 0.145, -1.02));
+  }
+
+  // Potholes: recessed dark discs with raised rims.
+  const holes = [
+    { x: -1.05, z: 0.35, r: 0.42 },
+    { x: 0.62, z: -0.42, r: 0.30 },
+    { x: 1.18, z: 0.72, r: 0.22 }
+  ];
+  holes.forEach((hole) => {
+    const pit = cyl(hole.r, hole.r * 0.92, 0.06, MAT.asphaltDark(), hole.x, 0.13, hole.z, 28);
+    g.add(pit);
+    const rim = mesh(new THREE.TorusGeometry(hole.r, 0.035, 10, 28), MAT.asphaltDark(), hole.x, 0.15, hole.z);
+    rim.rotation.x = -Math.PI / 2;
+    g.add(rim);
+    for (let i = 0; i < 4; i += 1) {
+      const crack = box(0.03, 0.01, hole.r * 0.9, MAT.asphaltDark(),
+        hole.x + Math.cos(i * 1.6) * hole.r * 0.7, 0.155,
+        hole.z + Math.sin(i * 1.6) * hole.r * 0.7);
+      crack.rotation.y = i * 0.9;
+      g.add(crack);
+    }
+  });
+
+  // Warning cones.
+  [-1.75, -1.35].forEach((x, index) => {
+    const cone = cyl(0.02, 0.16, 0.42, MAT.amber(), x, 0.34, 1.15 + index * 0.22, 20);
+    g.add(cone);
+    const band = cyl(0.075, 0.105, 0.07, MAT.white(), x, 0.34, 1.15 + index * 0.22, 20);
+    g.add(band);
+    g.add(box(0.3, 0.025, 0.3, MAT.amber(), x, 0.14, 1.15 + index * 0.22));
+  });
+
+  return g;
+}
+
+function buildGarbage() {
+  const g = group();
+  g.add(cyl(2.6, 2.6, 0.06, new THREE.MeshStandardMaterial({ color: 0x1f3f33, roughness: 1 }), 0, 0.03, 0, 48));
+
+  const bin = group();
+  bin.add(box(2.15, 1.0, 1.25, MAT.green(), 0, 0.62, 0));
+  bin.add(box(2.22, 0.09, 1.32, MAT.metalDark(), 0, 1.13, 0));
+  const lid = box(2.2, 0.08, 1.3, MAT.metalDark(), 0, 1.28, -0.08);
+  lid.rotation.x = -0.18;
+  bin.add(lid);
+  [-0.78, 0.78].forEach((x) => {
+    [-0.5, 0.5].forEach((z) => {
+      const wheel = cyl(0.16, 0.16, 0.1, MAT.metalDark(), x, 0.14, z, 18);
+      wheel.rotation.z = Math.PI / 2;
+      bin.add(wheel);
+    });
+  });
+  bin.position.x = -0.35;
+  g.add(bin);
+
+  // Bags and loose litter around the bin.
+  const bags = [
+    [-1.55, 0.24, 0.85, 0.30], [1.0, 0.22, 0.9, 0.26],
+    [1.35, 0.2, 0.25, 0.22], [0.7, 0.18, -1.0, 0.2],
+    [-1.2, 0.16, -0.75, 0.18], [-0.1, 0.17, -1.15, 0.17]
+  ];
+  bags.forEach(([x, y, z, r], index) => {
+    const bag = sphere(r, index % 2 ? MAT.white() : MAT.concrete(), x, y, z, 14);
+    bag.scale.y = 0.78;
+    g.add(bag);
+  });
+  for (let i = 0; i < 9; i += 1) {
+    const litter = box(0.14, 0.04, 0.2, i % 3 ? MAT.amber() : MAT.white(),
+      Math.cos(i * 2.1) * 1.5, 0.07, Math.sin(i * 2.1) * 1.1);
+    litter.rotation.y = i * 0.7;
+    g.add(litter);
+  }
+
+  return g;
+}
+
+function buildStreetlight() {
+  const g = group();
+  g.add(cyl(2.4, 2.4, 0.05, MAT.asphalt(), 0, 0.025, 0, 48));
+
+  const pole = group();
+  pole.add(cyl(0.16, 0.21, 0.32, MAT.metalDark(), 0, 0.16, 0));
+  pole.add(cyl(0.075, 0.095, 2.9, MAT.metal(), 0, 1.7, 0));
+  pole.add(box(0.08, 0.5, 0.08, MAT.metal(), 0, 3.05, 0));
+  const arm = cyl(0.055, 0.055, 0.95, MAT.metal(), 0, 3.26, 0.42, 16);
+  arm.rotation.x = Math.PI / 2;
+  pole.add(arm);
+
+  const head = box(0.62, 0.13, 0.26, MAT.metalDark(), 0, 3.2, 0.92);
+  pole.add(head);
+  const lamp = box(0.44, 0.04, 0.18, new THREE.MeshStandardMaterial({
+    color: 0xfff2c4, emissive: 0xffc233, emissiveIntensity: 2.1, roughness: 0.3
+  }), 0, 3.12, 0.92);
+  pole.add(lamp);
+
+  const glow = sphere(0.24, new THREE.MeshBasicMaterial({
+    color: 0xffd977, transparent: true, opacity: 0.22
+  }), 0, 3.08, 0.92, 18);
+  glow.scale.set(1.4, 0.7, 1.4);
+  pole.add(glow);
+
+  const pool = cyl(0.85, 1.15, 0.02, new THREE.MeshBasicMaterial({
+    color: 0xffd977, transparent: true, opacity: 0.15
+  }), 0, 0.06, 0.92, 40);
+  pole.add(pool);
+
+  g.add(pole);
+  return g;
+}
+
+function buildDrainage() {
+  const g = group();
+  g.add(box(3.4, 0.2, 2.6, MAT.concreteDark(), 0, 0.0, 0));
+
+  // Open manhole with a dark water surface.
+  const ring = mesh(new THREE.TorusGeometry(0.78, 0.13, 14, 40), MAT.metalDark(), -0.55, 0.12, 0);
+  ring.rotation.x = -Math.PI / 2;
+  g.add(ring);
+  const water = cyl(0.72, 0.72, 0.03, MAT.water(), -0.55, 0.09, 0, 40);
+  g.add(water);
+
+  // Radial grate bars.
+  for (let i = 0; i < 6; i += 1) {
+    const bar = box(0.06, 0.05, 1.34, MAT.metalDark(), -0.55, 0.13, 0);
+    bar.rotation.y = (i / 6) * Math.PI;
+    g.add(bar);
+  }
+
+  // Broken pipe with a visible opening.
+  const pipe = cyl(0.36, 0.4, 2.3, MAT.concrete(), 1.0, 0.42, -0.45, 28);
+  pipe.rotation.z = Math.PI / 2;
+  g.add(pipe);
+  const mouth = mesh(new THREE.TorusGeometry(0.36, 0.06, 10, 28), MAT.concreteDark(), 2.15, 0.42, -0.45);
+  mouth.rotation.y = Math.PI / 2;
+  g.add(mouth);
+  const inner = cyl(0.3, 0.3, 0.1, MAT.asphaltDark(), 2.13, 0.42, -0.45, 26);
+  inner.rotation.z = Math.PI / 2;
+  g.add(inner);
+
+  // Spilled water.
+  const spill = cyl(0.9, 1.05, 0.02, new THREE.MeshStandardMaterial({
+    color: 0x0ea5b7, roughness: 0.1, transparent: true, opacity: 0.5
+  }), 0.35, 0.11, 0.75, 36);
+  g.add(spill);
+
+  // Warning barrier.
+  for (let i = 0; i < 2; i += 1) {
+    g.add(cyl(0.03, 0.03, 0.55, MAT.amber(), -1.4 + i * 0.9, 0.38, 1.05, 10));
+  }
+  const tape = box(1.0, 0.1, 0.02, MAT.amber(), -0.95, 0.6, 1.05);
+  g.add(tape);
+
+  return g;
+}
+
+function buildWater() {
+  const g = group();
+  g.add(cyl(2.6, 2.6, 0.06, MAT.concreteDark(), 0, 0.03, 0, 48));
+
+  // Main pipe run with a T-junction.
+  const main = cyl(0.26, 0.26, 2.9, MAT.blue(), 0, 0.42, 0, 28);
+  main.rotation.z = Math.PI / 2;
+  g.add(main);
+  const branch = cyl(0.21, 0.21, 1.1, MAT.blue(), 0.55, 0.95, 0, 24);
+  g.add(branch);
+  const flange = cyl(0.3, 0.3, 0.09, MAT.metal(), 0.55, 0.44, 0, 26);
+  g.add(flange);
+
+  // Valve wheel.
+  const wheel = mesh(new THREE.TorusGeometry(0.34, 0.045, 10, 30), MAT.red(), 0.55, 0.95, 0);
+  wheel.rotation.x = Math.PI / 2;
+  g.add(wheel);
+  for (let i = 0; i < 4; i += 1) {
+    const spoke = box(0.6, 0.035, 0.035, MAT.red(), 0.55, 0.95, 0);
+    spoke.rotation.y = (i / 4) * Math.PI;
+    g.add(spoke);
+  }
+  g.add(cyl(0.09, 0.09, 0.2, MAT.metal(), 0.55, 0.95, 0, 14));
+
+  // Elevated tank on legs.
+  const tank = group();
+  tank.add(cyl(0.62, 0.62, 0.75, MAT.white(), 0, 1.45, -1.1, 30));
+  tank.add(cyl(0.64, 0.64, 0.07, MAT.blue(), 0, 1.85, -1.1, 30));
+  const dome = sphere(0.62, MAT.blue(), 0, 1.9, -1.1, 26);
+  dome.scale.y = 0.45;
+  tank.add(dome);
+  [[-0.42, -0.7], [0.42, -0.7], [-0.42, -1.5], [0.42, -1.5]].forEach(([x, z]) => {
+    tank.add(cyl(0.045, 0.045, 0.9, MAT.metal(), x, 0.55, z, 10));
+  });
+  g.add(tank);
+
+  // Leaking droplets.
+  [[-1.15, 0.7, 0.6], [-0.95, 0.5, 0.72], [-1.3, 0.35, 0.5]].forEach(([x, y, z]) => {
+    const drop = sphere(0.075, MAT.water(), x, y, z, 12);
+    drop.scale.y = 1.35;
+    g.add(drop);
+  });
+
+  return g;
+}
+
+function buildTraffic() {
+  const g = group();
+  g.add(box(3.6, 0.22, 2.6, MAT.asphalt(), 0, 0.02, 0));
+
+  // Zebra crossing.
+  for (let i = 0; i < 5; i += 1) {
+    g.add(box(0.34, 0.015, 1.5, MAT.white(), -1.2 + i * 0.6, 0.14, 0.6));
+  }
+
+  // Signal pole and arm.
+  const pole = group();
+  pole.add(cyl(0.13, 0.16, 0.24, MAT.metalDark(), 0, 0.12, 0));
+  pole.add(cyl(0.075, 0.085, 2.75, MAT.metalDark(), 0, 1.45, 0));
+  const arm = cyl(0.055, 0.055, 1.25, MAT.metalDark(), 0, 2.78, 0.56, 16);
+  arm.rotation.x = Math.PI / 2;
+  pole.add(arm);
+
+  const housing = box(0.34, 0.95, 0.26, MAT.metalDark(), 0, 2.72, 1.18);
+  pole.add(housing);
+  const lights = [
+    { y: 3.04, color: 0xef4444, on: true },
+    { y: 2.72, color: 0xf59e0b, on: false },
+    { y: 2.4, color: 0x22c55e, on: false }
+  ];
+  lights.forEach((light) => {
+    const material = new THREE.MeshStandardMaterial({
+      color: light.on ? light.color : 0x2a3138,
+      emissive: light.on ? light.color : 0x000000,
+      emissiveIntensity: light.on ? 1.8 : 0,
+      roughness: 0.4
+    });
+    const lamp = cyl(0.09, 0.09, 0.05, material, 0, light.y, 1.32, 20);
+    lamp.rotation.x = Math.PI / 2;
+    pole.add(lamp);
+    const visor = box(0.22, 0.04, 0.16, MAT.metalDark(), 0, light.y + 0.11, 1.32);
+    pole.add(visor);
+  });
+
+  // Direction sign.
+  const sign = box(0.9, 0.32, 0.05, MAT.blue(), -1.15, 2.1, 0);
+  pole.add(sign);
+  pole.children[pole.children.length - 1].position.x = -1.15;
+  const signPost = cyl(0.04, 0.04, 1.95, MAT.metal(), -1.15, 1.0, 0, 10);
+  pole.add(signPost);
+
+  g.add(pole);
+
+  // Cone on the carriageway.
+  const cone = cyl(0.02, 0.15, 0.4, MAT.amber(), 1.25, 0.35, -0.8, 20);
+  g.add(cone);
+  g.add(box(0.28, 0.02, 0.28, MAT.amber(), 1.25, 0.14, -0.8));
+
+  return g;
+}
+
+function buildTrees() {
+  const g = group();
+  const grass = cyl(2.55, 2.55, 0.07, new THREE.MeshStandardMaterial({ color: 0x2f6b43, roughness: 1 }), 0, 0.035, 0, 48);
+  g.add(grass);
+
+  const tree = group();
+  tree.add(cyl(0.13, 0.24, 1.7, MAT.brown(), 0, 0.85, 0, 16));
+  [[0, 1.95, 0, 0.72], [-0.42, 2.3, 0.18, 0.55], [0.4, 2.35, -0.1, 0.5], [0.05, 2.62, 0.15, 0.42]].forEach(([x, y, z, r]) => {
+    const crown = sphere(r, MAT.greenLight(), x, y, z, 16);
+    crown.scale.y = 0.86;
+    tree.add(crown);
+  });
+  // Branch hints.
+  const branch = cyl(0.05, 0.07, 0.7, MAT.brown(), 0.35, 1.55, 0.08, 10);
+  branch.rotation.z = -0.7;
+  tree.add(branch);
+  tree.position.x = -0.55;
+  g.add(tree);
+
+  // Fallen branch.
+  const fallen = cyl(0.09, 0.13, 1.7, MAT.brown(), 1.0, 0.2, 0.55, 12);
+  fallen.rotation.z = Math.PI / 2;
+  fallen.rotation.y = 0.4;
+  g.add(fallen);
+  // Leaf clusters on the ground.
+  [[1.0, 0.14, 0.95, 0.26], [0.55, 0.12, 0.25, 0.2], [1.55, 0.12, 0.3, 0.18]].forEach(([x, y, z, r]) => {
+    const leaves = sphere(r, MAT.green(), x, y, z, 12);
+    leaves.scale.y = 0.5;
+    g.add(leaves);
+  });
+
+  // Small sapling.
+  g.add(cyl(0.03, 0.045, 0.5, MAT.brown(), -1.45, 0.29, 0.85, 8));
+  g.add(sphere(0.22, MAT.greenLight(), -1.45, 0.62, 0.85, 12));
+
+  return g;
+}
+
+function buildConstruction() {
+  const g = group();
+  g.add(box(3.3, 0.16, 2.6, MAT.concreteDark(), 0, 0.0, 0));
+
+  // Unfinished concrete frame.
+  const frame = group();
+  const columns = [[-1.0, -0.75], [1.0, -0.75], [-1.0, 0.75], [1.0, 0.75]];
+  columns.forEach(([x, z]) => {
+    frame.add(box(0.24, 2.3, 0.24, MAT.concrete(), x, 1.15, z));
+  });
+  frame.add(box(2.45, 0.18, 1.9, MAT.concrete(), 0, 2.32, 0));
+  frame.add(box(2.45, 0.14, 1.9, MAT.concrete(), 0, 1.22, 0));
+
+  // Exposed rebar above the top slab.
+  for (let i = 0; i < 6; i += 1) {
+    frame.add(cyl(0.015, 0.015, 0.42, MAT.metalDark(),
+      -0.85 + (i % 3) * 0.85, 2.6, -0.55 + Math.floor(i / 3) * 1.1, 6));
+  }
+  // Scaffolding.
+  [[-1.5, 0, 0.95], [1.5, 0, 0.95]].forEach(([x, , z]) => {
+    frame.add(cyl(0.035, 0.035, 2.5, MAT.metal(), x, 1.25, z, 10));
+    frame.add(cyl(0.035, 0.035, 2.5, MAT.metal(), x, 1.25, z - 0.55, 10));
+    const cross = cyl(0.03, 0.03, 0.85, MAT.metal(), x, 1.85, z - 0.27, 8);
+    cross.rotation.x = Math.PI / 2;
+    frame.add(cross);
+  });
+  g.add(frame);
+
+  // Safety barriers.
+  for (let i = 0; i < 3; i += 1) {
+    const panel = box(0.85, 0.28, 0.06, i % 2 ? MAT.red() : MAT.white(), -1.0 + i * 0.95, 0.34, 1.16);
+    g.add(panel);
+    g.add(box(0.05, 0.62, 0.05, MAT.metalDark(), -0.45 + i * 0.95, 0.28, 1.16));
+  }
+
+  // Material stacks.
+  [[1.35, 0.2, -0.95], [1.55, 0.15, -0.7]].forEach(([x, y, z], index) => {
+    const plank = box(0.7, 0.12, 0.4, index ? MAT.brown() : MAT.concrete(), x, y, z);
+    plank.rotation.y = index * 0.35;
+    g.add(plank);
+  });
+
+  return g;
+}
+
+function buildProperty() {
+  const g = group();
+  g.add(cyl(2.55, 2.55, 0.05, MAT.concreteDark(), 0, 0.025, 0, 48));
+
+  // Bus shelter frame.
+  const shelter = group();
+  [[-1.15, -0.55], [1.15, -0.55], [-1.15, 0.55], [1.15, 0.55]].forEach(([x, z]) => {
+    shelter.add(cyl(0.05, 0.06, 2.0, MAT.metal(), x, 1.0, z, 12));
+  });
+  shelter.add(box(2.7, 0.1, 1.5, MAT.metalDark(), 0, 2.02, 0));
+  shelter.add(box(2.5, 0.75, 0.05, new THREE.MeshStandardMaterial({
+    color: 0x9ec9dd, transparent: true, opacity: 0.35, roughness: 0.2
+  }), 0, 1.5, -0.55));
+  // One roof panel sagging (damaged).
+  const sag = box(1.25, 0.08, 1.42, MAT.metalDark(), 0.72, 1.9, 0);
+  sag.rotation.z = -0.14;
+  shelter.add(sag);
+  g.add(shelter);
+
+  // Damaged bench.
+  const bench = group();
+  bench.add(box(1.9, 0.1, 0.5, MAT.brown(), 0, 0.52, 0.9));
+  const broken = box(0.75, 0.09, 0.5, MAT.brown(), 0.62, 0.4, 0.9);
+  broken.rotation.z = -0.34;
+  bench.add(broken);
+  bench.add(box(0.12, 0.5, 0.45, MAT.metalDark(), -0.78, 0.26, 0.9));
+  bench.add(box(0.12, 0.5, 0.45, MAT.metalDark(), 0.78, 0.26, 0.9));
+  g.add(bench);
+
+  // Debris and a barrier.
+  [[-0.55, 0.1, 1.35, 0.18], [0.1, 0.09, 1.5, 0.14], [-0.95, 0.08, 1.15, 0.12]].forEach(([x, y, z, r]) => {
+    const chunk = box(r * 2, 0.12, r * 1.4, MAT.concrete(), x, y, z);
+    chunk.rotation.y = x * 1.2;
+    g.add(chunk);
+  });
+  for (let i = 0; i < 2; i += 1) {
+    g.add(cyl(0.03, 0.03, 0.62, MAT.amber(), -1.4 + i * 1.0, 0.36, 1.45, 10));
+  }
+  g.add(box(1.15, 0.1, 0.02, MAT.amber(), -0.9, 0.62, 1.45));
+
+  return g;
+}
+
+/* ------------------------------------------------------------------ *
+ * Renderer / scene
+ * ------------------------------------------------------------------ */
+const canvas = document.getElementById("gal-canvas");
+const overlay = document.getElementById("gal-overlay");
+const overlayPanel = document.getElementById("gal-overlay-panel");
+const hud = document.getElementById("gal-hud");
+const hudTitle = document.getElementById("gal-hud-title");
+const hudSub = document.getElementById("gal-hud-sub");
+const titleNode = document.getElementById("gal-title");
+const descNode = document.getElementById("gal-description");
+const autoRotateInput = document.getElementById("gal-autorotate");
+const listNode = document.getElementById("gal-cat-list");
+
+let renderer, scene, camera, currentModel = null, activeId = null;
+const cache = new Map();
+
+function webglAvailable() {
+  try {
+    const probe = document.createElement("canvas");
+    return !!(
+      window.WebGLRenderingContext &&
+      (probe.getContext("webgl2") || probe.getContext("webgl") || probe.getContext("experimental-webgl"))
+    );
+  } catch (error) {
+    return false;
+  }
+}
+
+function showOverlay(kind, title, message, retry) {
+  overlay.hidden = false;
+  overlayPanel.textContent = "";
+
+  if (kind === "loading") {
+    const spinner = document.createElement("div");
+    spinner.className = "gal-spinner";
+    overlayPanel.appendChild(spinner);
+  }
+
+  const heading = document.createElement("b");
+  heading.textContent = title;
+  overlayPanel.appendChild(heading);
+
+  if (message) {
+    const para = document.createElement("p");
+    para.textContent = message;
+    overlayPanel.appendChild(para);
+  }
+
+  if (retry) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "gal-btn";
+    button.textContent = "Try again";
+    button.addEventListener("click", retry);
+    overlayPanel.appendChild(button);
+  }
+}
+
+function hideOverlay() {
+  overlay.hidden = true;
+  overlayPanel.textContent = "";
+}
+
+const orbit = {
+  theta: 0.72,
+  phi: 0.98,
+  radius: 6.6,
+  target: new THREE.Vector3(0, 0.95, 0),
+  minRadius: 3.0,
+  maxRadius: 13.0
+};
+
+function applyCamera() {
+  const sinPhi = Math.sin(orbit.phi);
+  camera.position.set(
+    orbit.target.x + orbit.radius * sinPhi * Math.sin(orbit.theta),
+    orbit.target.y + orbit.radius * Math.cos(orbit.phi),
+    orbit.target.z + orbit.radius * sinPhi * Math.cos(orbit.theta)
+  );
+  camera.lookAt(orbit.target);
+}
+
+function resetView() {
+  orbit.theta = 0.72;
+  orbit.phi = 0.98;
+  orbit.radius = 6.6;
+  applyCamera();
+}
+
+function initScene() {
+  renderer = new THREE.WebGLRenderer({
+    canvas,
+    antialias: true,
+    alpha: true,
+    powerPreference: "high-performance"
+  });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  if ("outputColorSpace" in renderer) {
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+  }
+
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
+
+  const hemi = new THREE.HemisphereLight(0xd6ecff, 0x0a1f33, 1.15);
+  scene.add(hemi);
+
+  const key = new THREE.DirectionalLight(0xffffff, 2.0);
+  key.position.set(5.5, 8.5, 4.5);
+  key.castShadow = true;
+  key.shadow.mapSize.set(1024, 1024);
+  key.shadow.camera.near = 0.5;
+  key.shadow.camera.far = 30;
+  key.shadow.camera.left = -7;
+  key.shadow.camera.right = 7;
+  key.shadow.camera.top = 7;
+  key.shadow.camera.bottom = -7;
+  key.shadow.bias = -0.0008;
+  scene.add(key);
+
+  const rim = new THREE.DirectionalLight(0x2dd4bf, 1.0);
+  rim.position.set(-5, 3, -6);
+  scene.add(rim);
+
+  const fill = new THREE.PointLight(0x60a5fa, 0.7, 22);
+  fill.position.set(-4, 2.2, 4);
+  scene.add(fill);
+
+  // Static platform so every model shares the same grounding.
+  const platform = cyl(3.15, 3.15, 0.16, new THREE.MeshStandardMaterial({
+    color: 0x0f2d47, roughness: 0.85, metalness: 0.15
+  }), 0, -0.16, 0, 64);
+  platform.receiveShadow = true;
+  scene.add(platform);
+
+  const ring = mesh(new THREE.TorusGeometry(3.16, 0.022, 8, 90), new THREE.MeshStandardMaterial({
+    color: 0x2dd4bf, emissive: 0x0d9488, emissiveIntensity: 0.8, roughness: 0.4
+  }), 0, -0.07, 0);
+  ring.rotation.x = Math.PI / 2;
+  scene.add(ring);
+
+  applyCamera();
+  resize();
+  animate();
+}
+
+function resize() {
+  const rect = canvas.getBoundingClientRect();
+  const width = Math.max(1, Math.floor(rect.width));
+  const height = Math.max(1, Math.floor(rect.height));
+  renderer.setSize(width, height, false);
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+}
+
+let lastFrame = 0;
+function animate(now) {
+  const delta = lastFrame ? Math.min((now - lastFrame) / 1000, 0.05) : 0;
+  lastFrame = now;
+  if (autoRotateInput.checked && overlay.hidden) {
+    orbit.theta += delta * 0.32;
+    applyCamera();
+  }
+  renderer.render(scene, camera);
+  requestAnimationFrame(animate);
+}
+
+/* ------------------------------------------------------------------ *
+ * Pointer / wheel / keyboard controls
+ * ------------------------------------------------------------------ */
+function bindControls() {
+  const pointers = new Map();
+  let mode = "rotate";
+  let start = null;
+
+  canvas.addEventListener("pointerdown", (event) => {
+    canvas.focus({ preventScroll: true });
+    canvas.setPointerCapture(event.pointerId);
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    mode = pointers.size === 2 ? "pinch" : "rotate";
+    start = { x: event.clientX, y: event.clientY, theta: orbit.theta, phi: orbit.phi, radius: orbit.radius, distance: pinchDistance(pointers) };
+  });
+
+  canvas.addEventListener("pointermove", (event) => {
+    if (!pointers.has(event.pointerId)) { return; }
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+
+    if (mode === "pinch" && pointers.size === 2) {
+      const distance = pinchDistance(pointers);
+      if (start && start.distance > 0) {
+        orbit.radius = clamp(start.radius * (start.distance / distance), orbit.minRadius, orbit.maxRadius);
+        applyCamera();
+      }
+      return;
+    }
+
+    if (mode !== "rotate" || !start) { return; }
+    orbit.theta = start.theta - (event.clientX - start.x) * 0.006;
+    orbit.phi = clamp(start.phi - (event.clientY - start.y) * 0.006, 0.18, 1.44);
+    applyCamera();
+  });
+
+  function endPointer(event) {
+    pointers.delete(event.pointerId);
+    if (pointers.size === 0) { start = null; }
+    else if (pointers.size === 1) {
+      const remaining = Array.from(pointers.values())[0];
+      start = { x: remaining.x, y: remaining.y, theta: orbit.theta, phi: orbit.phi, radius: orbit.radius, distance: 0 };
+      mode = "rotate";
+    }
+  }
+  canvas.addEventListener("pointerup", endPointer);
+  canvas.addEventListener("pointercancel", endPointer);
+  canvas.addEventListener("pointerleave", endPointer);
+
+  canvas.addEventListener("wheel", (event) => {
+    event.preventDefault();
+    const factor = Math.exp(event.deltaY * 0.0012);
+    orbit.radius = clamp(orbit.radius * factor, orbit.minRadius, orbit.maxRadius);
+    applyCamera();
+  }, { passive: false });
+
+  canvas.addEventListener("keydown", (event) => {
+    const step = 0.09;
+    if (event.key === "ArrowLeft") { orbit.theta -= step; }
+    else if (event.key === "ArrowRight") { orbit.theta += step; }
+    else if (event.key === "ArrowUp") { orbit.phi = clamp(orbit.phi - step, 0.18, 1.44); }
+    else if (event.key === "ArrowDown") { orbit.phi = clamp(orbit.phi + step, 0.18, 1.44); }
+    else if (event.key === "+" || event.key === "=") { orbit.radius = clamp(orbit.radius - 0.5, orbit.minRadius, orbit.maxRadius); }
+    else if (event.key === "-" || event.key === "_") { orbit.radius = clamp(orbit.radius + 0.5, orbit.minRadius, orbit.maxRadius); }
+    else if (event.key === "r" || event.key === "R") { resetView(); }
+    else { return; }
+    event.preventDefault();
+    applyCamera();
+  });
+
+  document.getElementById("gal-reset").addEventListener("click", resetView);
+
+  if ("ResizeObserver" in window) {
+    new ResizeObserver(resize).observe(canvas.parentElement);
+  } else {
+    window.addEventListener("resize", resize);
+  }
+}
+
+function pinchDistance(pointers) {
+  const values = Array.from(pointers.values());
+  if (values.length < 2) { return 0; }
+  const dx = values[0].x - values[1].x;
+  const dy = values[0].y - values[1].y;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
+/* ------------------------------------------------------------------ *
+ * Category selection and lazy construction
+ * ------------------------------------------------------------------ */
+function buildCategoryList() {
+  CATEGORIES.forEach((category, index) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "gal-cat";
+    button.dataset.category = category.id;
+
+    const swatch = document.createElement("span");
+    swatch.className = "swatch";
+    swatch.style.background = category.swatch;
+    swatch.setAttribute("aria-hidden", "true");
+
+    const label = document.createElement("span");
+    label.textContent = category.name;
+
+    const idx = document.createElement("span");
+    idx.className = "idx";
+    idx.textContent = String(index + 1).padStart(2, "0");
+
+    button.appendChild(swatch);
+    button.appendChild(label);
+    button.appendChild(idx);
+    button.addEventListener("click", () => selectCategory(category.id));
+    listNode.appendChild(button);
+  });
+}
+
+function setActiveButton(id) {
+  Array.from(listNode.querySelectorAll(".gal-cat")).forEach((button) => {
+    const active = button.dataset.category === id;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", active ? "true" : "false");
+  });
+}
+
+function nextPaint() {
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(resolve));
+  });
+}
+
+async function selectCategory(id) {
+  const category = CATEGORIES.find((item) => item.id === id);
+  if (!category) { return; }
+
+  activeId = id;
+  setActiveButton(id);
+  if (window.history && window.history.replaceState) {
+    window.history.replaceState(null, "", "#" + id);
+  }
+  titleNode.textContent = category.name;
+  descNode.textContent = category.description;
+  hudTitle.textContent = category.name;
+  hudSub.textContent = "Building model…";
+  hud.hidden = false;
+  showOverlay("loading", "Building " + category.name, "Constructing the illustrative model in your browser.");
+
+  await nextPaint();
+
+  try {
+    let model = cache.get(id);
+    if (!model) {
+      model = category.build();
+      model.traverse((node) => {
+        if (node.isMesh) {
+          node.castShadow = true;
+          node.receiveShadow = true;
+        }
+      });
+      cache.set(id, model);
+    }
+
+    if (currentModel) { scene.remove(currentModel); }
+    currentModel = model;
+    currentModel.rotation.set(0, 0, 0);
+    scene.add(currentModel);
+
+    // Only mark the selected category active after a successful build.
+    hudSub.textContent = "Drag to rotate · scroll to zoom";
+    hideOverlay();
+  } catch (error) {
+    console.error("UIMRS 3D model failed to build:", error);
+    hudSub.textContent = "Model unavailable";
+    showOverlay(
+      "error",
+      "This model could not be built",
+      "The 3D viewer hit an unexpected error while constructing the scene. You can retry, or choose another category.",
+      () => selectCategory(id)
+    );
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Boot
+ * ------------------------------------------------------------------ */
+function boot() {
+  buildCategoryList();
+
+  if (!webglAvailable()) {
+    showOverlay(
+      "error",
+      "WebGL is not available",
+      "This browser or device cannot start a WebGL context, so the 3D gallery cannot render. The nine categories are still listed on this page, and the rest of UIMRS works normally."
+    );
+    hud.hidden = true;
+    descNode.textContent = "The 3D viewer requires WebGL, which this browser does not provide.";
+    Array.from(listNode.querySelectorAll(".gal-cat")).forEach((button) => {
+      button.disabled = true;
+      button.title = "Requires WebGL";
+    });
+    return;
+  }
+
+  try {
+    initScene();
+    bindControls();
+  } catch (error) {
+    console.error("UIMRS 3D renderer failed to start:", error);
+    showOverlay(
+      "error",
+      "The 3D viewer could not start",
+      "WebGL reported support but the renderer could not initialise. The rest of the website is unaffected."
+    );
+    return;
+  }
+
+  // Restore the previous category from the URL fragment, defaulting to roads.
+  const requested = (window.location.hash || "").replace("#", "");
+  const initialId = CATEGORIES.some((item) => item.id === requested) ? requested : "road";
+  selectCategory(initialId);
+
+  if ("ResizeObserver" in window) {
+    new ResizeObserver(() => {
+      if (renderer) { resize(); }
+    }).observe(canvas.parentElement);
+  }
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", boot);
+} else {
+  boot();
+}
+</script>
+</body>
+</html>

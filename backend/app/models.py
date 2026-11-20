@@ -13,7 +13,7 @@ from datetime import datetime
 
 from sqlalchemy import (
     Column, String, Text, Float, Integer, Boolean, DateTime, ForeignKey, Enum, JSON,
-    event,
+    LargeBinary, event,
 )
 from sqlalchemy.orm import relationship
 
@@ -196,7 +196,10 @@ class IssueImage(Base):
 
     id = Column(String(36), primary_key=True, default=gen_uuid)
     issue_id = Column(String(36), ForeignKey("issues.id"), nullable=False)
+    # Relative storage key for filesystem-backed rows, or a ``db:<id>.ext``
+    # sentinel for rows whose bytes live in ``image_data``.
     image_url = Column(String(500), nullable=False)
+    image_data = Column(LargeBinary, nullable=True)
 
     # --- CV verification output ---
     blur_score = Column(Float)

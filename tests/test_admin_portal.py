@@ -1130,7 +1130,7 @@ class TestAdminPortalFrontend(AdminPortalTestBase):
 # ---------------------------------------------------------------------------
 class TestAdminSchemaAndMigration(unittest.TestCase):
     def test_head_revision_and_guard_include_the_audit_log(self):
-        self.assertEqual(HEAD_REVISION, "0004_admin_audit_log")
+        self.assertEqual(HEAD_REVISION, "0005_image_data_bytea")
         self.assertIn(AUDIT_LOG_TABLE, REQUIRED_SCHEMA)
         self.assertIn("actor_user_id", REQUIRED_SCHEMA[AUDIT_LOG_TABLE])
         self.assertIn("before_state", REQUIRED_SCHEMA[AUDIT_LOG_TABLE])
